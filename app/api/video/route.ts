@@ -12,11 +12,7 @@ import {
   parseJsonBody,
 } from "@/lib/utils";
 
-/**
- * GET  /api/video       → { media, description } | null       (public)
- * POST /api/video       → upsert singleton (admin)
- *   Body: { media, description, publicId? }
- */
+
 
 export async function GET(req: NextRequest) {
   try {
