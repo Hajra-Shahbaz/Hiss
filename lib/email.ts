@@ -39,7 +39,6 @@ export async function sendEmail(input: EmailInput): Promise<{ id: string }> {
     subject: input.subject,
     html,
     text,
-    // Improves deliverability + prevents auto-replies fighting back
     headers: {
       "X-Entity-Ref-ID": `umer-${Date.now()}`,
       "List-Unsubscribe": `<mailto:${from}?subject=unsubscribe>`,
@@ -61,12 +60,10 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/** Preserve line breaks in plain user content */
 function nl2br(s: string): string {
   return escapeHtml(s).replace(/\r?\n/g, "<br/>");
 }
 
-/** Safe URL check — we don't want to include javascript: links */
 function safeUrl(u: string | undefined): string | null {
   if (!u) return null;
   try {
@@ -81,25 +78,29 @@ function safeUrl(u: string | undefined): string | null {
 }
 
 // ─────────────────────────────────────────────
-// HTML template
+// Default sticker — inline SVG (no external
+// dependency, works in every email client).
+// Pink circle with a pink heart.
 // ─────────────────────────────────────────────
-//
-// Design notes:
-//  • Table-based layout (Outlook-safe)
-//  • Inline styles only (Gmail strips <style>)
-//  • 600px max width (standard safe width)
-//  • Preheader text for inbox preview
-//  • Fluid typography with px fallbacks
-//  • Rounded corners via border-radius (with graceful fallback)
-//  • Colors match the site: powder blue / deep ink
-//
+
+const DEFAULT_STICKER_URL =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="48" fill="#fdf2f8"/>
+    <circle cx="50" cy="50" r="48" fill="none" stroke="#fbcfe8" stroke-width="2"/>
+    <path d="M50 78 C 30 60, 18 48, 18 36 A 14 14 0 0 1 50 30 A 14 14 0 0 1 82 36 C 82 48, 70 60, 50 78 Z" fill="#ec4899"/>
+  </svg>`);
+
+// ─────────────────────────────────────────────
+// ✨ Flat 2D · Soft Pink & Blue · Centered CTA
+// ─────────────────────────────────────────────
 
 export function renderEmailTemplate(input: EmailInput): string {
   const safeHeading = escapeHtml(input.heading);
   const safeRecipient = escapeHtml(input.recipientName);
   const messageHtml = nl2br(input.message);
   const closing = input.closing ? nl2br(input.closing) : "";
-  const imageUrl = safeUrl(input.imageUrl);
+  const customImage = safeUrl(input.imageUrl);
   const buttonUrl = safeUrl(input.buttonUrl);
   const buttonText = input.buttonText ? escapeHtml(input.buttonText) : "";
   const subject = escapeHtml(input.subject);
@@ -107,37 +108,57 @@ export function renderEmailTemplate(input: EmailInput): string {
     input.message.replace(/\s+/g, " ").slice(0, 140),
   );
 
-  const heroImage = imageUrl
+  // Hero image (custom) — above message
+  const heroImage = customImage
     ? `
       <tr>
-        <td align="center" style="padding:0;">
+        <td align="center" style="padding:0 40px 24px 40px;">
           <img
-            src="${imageUrl}"
+            src="${customImage}"
             alt=""
-            width="600"
-            style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;"
+            width="520"
+            style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;border-radius:12px;"
           />
         </td>
       </tr>`
     : "";
 
+  // Default sticker — bottom-left below message
+  const sticker = !customImage
+    ? `
+      <tr>
+        <td align="left" style="padding:0 40px 24px 40px;">
+          <img
+            src="${DEFAULT_STICKER_URL}"
+            alt=""
+            width="80"
+            height="80"
+            style="display:block;width:80px;height:80px;border:0;outline:none;text-decoration:none;border-radius:12px;"
+          />
+        </td>
+      </tr>`
+    : "";
+
+  // ─── Clean 2D centered CTA button ───────────
+  // Solid pink pill. No gradient, no shadow.
+  // Renders identically in Gmail / Outlook / Apple Mail.
   const button =
     buttonText && buttonUrl
       ? `
       <tr>
-        <td align="center" style="padding:8px 40px 32px 40px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <td align="center" style="padding:12px 40px 32px 40px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
             <tr>
               <td
                 align="center"
-                bgcolor="#1e3a8a"
-                style="border-radius:9999px;mso-padding-alt:14px 32px;"
+                bgcolor="#ec4899"
+                style="background-color:#ec4899;border-radius:10px;mso-padding-alt:16px 40px;"
               >
                 <a
                   href="${buttonUrl}"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style="display:inline-block;padding:14px 32px;font-family:Georgia,'Times New Roman',serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.2px;border-radius:9999px;"
+                  style="display:inline-block;padding:16px 40px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;border-radius:10px;line-height:1;"
                 >
                   ${buttonText}
                 </a>
@@ -155,7 +176,7 @@ export function renderEmailTemplate(input: EmailInput): string {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td
-                style="border-top:1px solid #e2e8f0;padding-top:24px;font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#475569;font-style:italic;"
+                style="border-top:1px solid #e2e8f0;padding-top:20px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.7;color:#64748b;font-style:italic;"
               >
                 ${closing}
               </td>
@@ -186,102 +207,116 @@ export function renderEmailTemplate(input: EmailInput): string {
   <![endif]-->
 </head>
 <body
-  style="margin:0;padding:0;width:100%;background-color:#f1f5fb;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:Georgia,'Times New Roman',serif;color:#0f172a;"
+  style="margin:0;padding:0;width:100%;background-color:#f8fafc;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f172a;"
 >
-  <!-- Preheader: shown in inbox preview, hidden in email body -->
-  <div style="display:none;font-size:1px;color:#f1f5fb;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
+  <!-- Preheader -->
+  <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
     ${preheader}
     ${"&nbsp;&zwnj;".repeat(40)}
   </div>
 
+  <!-- Outer background -->
   <table
     role="presentation"
     width="100%"
     cellpadding="0"
     cellspacing="0"
     border="0"
-    style="background-color:#f1f5fb;"
+    style="background-color:#f8fafc;"
   >
     <tr>
       <td align="center" style="padding:40px 16px;">
 
-        <!-- Card -->
+        <!-- ═══════════════ CARD ═══════════════ -->
         <table
           role="presentation"
           width="600"
           cellpadding="0"
           cellspacing="0"
           border="0"
-          style="width:100%;max-width:600px;background-color:#ffffff;border-radius:24px;border:1px solid #dbe4f3;overflow:hidden;"
+          style="width:100%;max-width:600px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;"
         >
 
-          <!-- Top brand bar -->
+          <!-- ─── Top bar (flat pink) ─── -->
           <tr>
             <td
-              align="center"
-              style="background:linear-gradient(135deg,#dbeafe 0%,#eff6ff 100%);background-color:#dbeafe;padding:36px 40px 28px 40px;"
+              bgcolor="#ec4899"
+              style="background-color:#ec4899;padding:20px 40px;"
             >
-              <div style="font-size:34px;line-height:1;margin-bottom:14px;">💙</div>
+              <p
+                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#ffffff;text-align:center;"
+              >
+                A Little Message
+              </p>
+            </td>
+          </tr>
+
+          <!-- ─── Heading (soft blue, centered) ─── -->
+          <tr>
+            <td style="padding:36px 40px 12px 40px;" align="center">
               <h1
-                style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:24px;line-height:1.35;font-weight:600;color:#1e3a8a;letter-spacing:0.2px;"
+                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:22px;line-height:1.4;font-weight:700;color:#3b82f6;letter-spacing:-0.2px;"
               >
                 ${safeHeading}
               </h1>
             </td>
           </tr>
 
-          <!-- Greeting -->
+          <!-- ─── Greeting ─── -->
           <tr>
-            <td
-              style="padding:32px 40px 8px 40px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.7;color:#0f172a;"
-            >
-              <p style="margin:0 0 4px 0;">Hi ${safeRecipient},</p>
+            <td style="padding:0 40px 16px 40px;">
+              <p
+                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.7;color:#475569;"
+              >
+                Hi ${safeRecipient},
+              </p>
             </td>
           </tr>
 
-          <!-- Optional hero image -->
+          <!-- ─── Optional hero image ─── -->
           ${heroImage}
 
-          <!-- Message body -->
+          <!-- ─── Message body ─── -->
           <tr>
-            <td
-              style="padding:${
-                imageUrl ? "24px 40px 8px 40px" : "8px 40px 8px 40px"
-              };font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.75;color:#0f172a;"
-            >
+            <td style="padding:0 40px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.75;color:#334155;">
               <p style="margin:0 0 20px 0;">${messageHtml}</p>
             </td>
           </tr>
 
-          <!-- Optional CTA button -->
+          <!-- ─── Default sticker (only when no custom image) ─── -->
+          ${sticker}
+
+          <!-- ─── Centered 2D CTA ─── -->
           ${button}
 
-          <!-- Optional closing line -->
+          <!-- ─── Optional closing ─── -->
           ${closingBlock}
 
-          <!-- Footer -->
+          <!-- ─── Footer ─── -->
           <tr>
             <td
-              align="center"
+              bgcolor="#f8fafc"
               style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;"
             >
               <p
-                style="margin:0 0 6px 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.6;color:#64748b;"
+                style="margin:0 0 6px 0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.6;color:#64748b;text-align:center;"
               >
-                Sent with <span style="color:#2563eb;">💙</span>
+                Sent with love
+                <span style="color:#ec4899;">♥</span>
+                <span style="color:#3b82f6;">♥</span>
               </p>
               <p
-                style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:11px;line-height:1.6;color:#94a3b8;letter-spacing:0.3px;"
+                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:11px;line-height:1.6;color:#94a3b8;text-align:center;"
               >
-                This message was sent to you with love.
+                This message was made just for you.
               </p>
             </td>
           </tr>
 
         </table>
-        <!-- /Card -->
+        <!-- ═══════════════ /CARD ═══════════════ -->
 
-        <!-- Bottom spacer / tiny brand mark -->
+        <!-- ─── Bottom copyright ─── -->
         <table
           role="presentation"
           width="600"
@@ -293,7 +328,7 @@ export function renderEmailTemplate(input: EmailInput): string {
           <tr>
             <td
               align="center"
-              style="padding:24px 16px 0 16px;font-family:Georgia,'Times New Roman',serif;font-size:11px;line-height:1.6;color:#94a3b8;"
+              style="padding:24px 16px 0 16px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:11px;line-height:1.6;color:#94a3b8;"
             >
               © ${new Date().getFullYear()} · Made with care
             </td>
@@ -308,7 +343,7 @@ export function renderEmailTemplate(input: EmailInput): string {
 }
 
 // ─────────────────────────────────────────────
-// Plain-text fallback (required for deliverability)
+// Plain-text fallback
 // ─────────────────────────────────────────────
 
 function renderPlainText(input: EmailInput): string {

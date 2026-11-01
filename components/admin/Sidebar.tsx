@@ -18,7 +18,6 @@ import {
 import { motion } from "framer-motion";
 import { CategoryDef, ContentSlug, Tab } from "./types";
 
-// Cute, distinct icon per section
 const CATEGORY_ICONS: Record<ContentSlug, LucideIcon> = {
   wishes: Sparkles,
   congratulations: PartyPopper,
@@ -35,12 +34,14 @@ export default function Sidebar({
   activeTab,
   onSelect,
   onLogout,
+  onClose,
 }: {
   categories: CategoryDef[];
   counts: Record<string, number> | null;
   activeTab: Tab;
   onSelect: (tab: Tab) => void;
   onLogout: () => void;
+  onClose?: () => void;
 }) {
   const isActive = (tab: Tab) =>
     (tab.kind === "category" &&
@@ -49,22 +50,17 @@ export default function Sidebar({
     (tab.kind !== "category" && activeTab.kind === tab.kind);
 
   return (
-    <aside className="relative flex h-full flex-col overflow-hidden border-r border-pink-100/80 bg-gradient-to-b from-white via-pink-50/40 to-white">
-      {/* Soft decorative glow */}
-      <div className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-pink-200/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-16 h-56 w-56 rounded-full bg-rose-200/30 blur-3xl" />
+    <aside className="relative flex h-full flex-col overflow-hidden border-r border-pink-100 bg-white">
+      {/* Soft 2D decorative shapes */}
+      <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-pink-100/60" />
+      <div className="pointer-events-none absolute -left-10 bottom-24 h-24 w-24 rounded-full bg-blue-100/60" />
 
       {/* Brand */}
-      <div className="relative flex items-center gap-3 border-b border-pink-100/70 px-5 py-5">
-        <motion.div
-          initial={{ scale: 0.85, rotate: -8 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={{ type: "spring", stiffness: 220, damping: 16 }}
-          className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 via-pink-500 to-rose-500 shadow-lg shadow-pink-300/60"
-        >
+      <div className="relative flex items-center gap-3 border-b border-pink-100 px-5 py-5">
+        <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-pink-400 to-blue-400 shadow-sm shadow-pink-200">
           <Crown className="h-5 w-5 text-white" strokeWidth={2.2} />
           <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-amber-300 ring-2 ring-white" />
-        </motion.div>
+        </div>
         <div className="min-w-0">
           <p className="text-[15px] font-bold tracking-tight text-slate-800">
             Admin Panel
@@ -77,7 +73,7 @@ export default function Sidebar({
       </div>
 
       {/* Nav */}
-      <nav className="relative flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="relative flex-1 space-y-5 overflow-y-auto px-3 py-5">
         {/* Content sections */}
         <div>
           <p className="mb-2 flex items-center gap-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
@@ -94,9 +90,7 @@ export default function Sidebar({
                     label={c.label}
                     count={counts?.[c.slug]}
                     active={isActive({ kind: "category", slug: c.slug })}
-                    onClick={() =>
-                      onSelect({ kind: "category", slug: c.slug })
-                    }
+                    onClick={() => onSelect({ kind: "category", slug: c.slug })}
                     tint={c.slug}
                   />
                 </li>
@@ -108,7 +102,7 @@ export default function Sidebar({
         {/* Media & Tools */}
         <div>
           <p className="mb-2 flex items-center gap-1.5 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-            <Wand2 className="h-3 w-3 text-pink-400" />
+            <Wand2 className="h-3 w-3 text-blue-400" />
             Media & Tools
           </p>
           <ul className="space-y-1">
@@ -135,12 +129,12 @@ export default function Sidebar({
       </nav>
 
       {/* Footer */}
-      <div className="relative border-t border-pink-100/70 p-3">
+      <div className="relative border-t border-pink-100 p-3">
         <button
           onClick={onLogout}
-          className="group flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-500 transition hover:border-rose-100 hover:bg-rose-50/70 hover:text-rose-600"
+          className="group flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-500 transition active:scale-[0.98] hover:border-pink-100 hover:bg-pink-50 hover:text-pink-600"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition group-hover:bg-rose-100 group-hover:text-rose-600">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-pink-50 text-pink-400 transition group-hover:bg-pink-100 group-hover:text-pink-600">
             <LogOut className="h-3.5 w-3.5" />
           </span>
           <span className="flex-1 text-left">Sign out</span>
@@ -154,19 +148,19 @@ export default function Sidebar({
 }
 
 // ─────────────────────────────────────────────
-// NavItem — animated cute pill
+// NavItem — 2D flat pill
 // ─────────────────────────────────────────────
 
-const TINTS: Record<string, { from: string; to: string; shadow: string }> = {
-  wishes: { from: "from-amber-400", to: "to-orange-400", shadow: "shadow-amber-300/50" },
-  congratulations: { from: "from-pink-400", to: "to-rose-400", shadow: "shadow-pink-300/50" },
-  memories: { from: "from-sky-400", to: "to-indigo-400", shadow: "shadow-sky-300/50" },
-  moments: { from: "from-violet-400", to: "to-purple-400", shadow: "shadow-violet-300/50" },
-  promises: { from: "from-emerald-400", to: "to-teal-400", shadow: "shadow-emerald-300/50" },
-  sorry: { from: "from-slate-400", to: "to-slate-500", shadow: "shadow-slate-300/50" },
-  thankyou: { from: "from-rose-400", to: "to-pink-400", shadow: "shadow-rose-300/50" },
-  video: { from: "from-fuchsia-400", to: "to-pink-500", shadow: "shadow-fuchsia-300/50" },
-  email: { from: "from-indigo-400", to: "to-blue-500", shadow: "shadow-indigo-300/50" },
+const TINTS: Record<string, { bg: string; text: string; activeBg: string }> = {
+  wishes: { bg: "bg-amber-50", text: "text-amber-600", activeBg: "bg-amber-400" },
+  congratulations: { bg: "bg-pink-50", text: "text-pink-600", activeBg: "bg-pink-400" },
+  memories: { bg: "bg-sky-50", text: "text-sky-600", activeBg: "bg-sky-400" },
+  moments: { bg: "bg-violet-50", text: "text-violet-600", activeBg: "bg-violet-400" },
+  promises: { bg: "bg-emerald-50", text: "text-emerald-600", activeBg: "bg-emerald-400" },
+  sorry: { bg: "bg-slate-50", text: "text-slate-500", activeBg: "bg-slate-400" },
+  thankyou: { bg: "bg-rose-50", text: "text-rose-600", activeBg: "bg-rose-400" },
+  video: { bg: "bg-fuchsia-50", text: "text-fuchsia-600", activeBg: "bg-fuchsia-400" },
+  email: { bg: "bg-blue-50", text: "text-blue-600", activeBg: "bg-blue-400" },
 };
 
 function NavItem({
@@ -189,33 +183,28 @@ function NavItem({
   return (
     <button
       onClick={onClick}
-      className={`group relative flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition-all ${
+      className={`group relative flex w-full items-center gap-3 rounded-2xl px-2.5 py-2.5 text-sm font-medium transition-all active:scale-[0.98] ${
         active
-          ? "bg-white text-slate-800 shadow-md shadow-pink-100"
-          : "text-slate-600 hover:bg-white/60 hover:text-slate-800"
+          ? "bg-white text-slate-800 shadow-sm shadow-pink-100 ring-1 ring-pink-100"
+          : "text-slate-600 hover:bg-white/70 hover:text-slate-800"
       }`}
     >
-      {/* Active indicator strip */}
       {active && (
         <motion.span
           layoutId="active-indicator"
-          className={`absolute left-0 top-1/2 h-6 -translate-y-1/2 w-1 rounded-r-full bg-gradient-to-b ${colors.from} ${colors.to}`}
+          className={`absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full ${colors.activeBg}`}
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
         />
       )}
 
-      {/* Icon chip */}
       <span
         className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 ${
           active
-            ? `bg-gradient-to-br ${colors.from} ${colors.to} text-white shadow-md ${colors.shadow}`
-            : `bg-${tint}-50 bg-pink-50/70 text-slate-500 group-hover:bg-pink-100/70 group-hover:text-pink-600`
+            ? `${colors.activeBg} text-white`
+            : `${colors.bg} ${colors.text} group-hover:${colors.activeBg} group-hover:text-white`
         }`}
       >
-        <Icon
-          className="h-[17px] w-[17px]"
-          strokeWidth={active ? 2.3 : 2}
-        />
+        <Icon className="h-[17px] w-[17px]" strokeWidth={active ? 2.3 : 2} />
       </span>
 
       <span className="flex-1 truncate text-left">{label}</span>
@@ -224,8 +213,8 @@ function NavItem({
         <span
           className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums transition ${
             active
-              ? `bg-gradient-to-br ${colors.from} ${colors.to} text-white`
-              : "bg-pink-100/80 text-pink-700 group-hover:bg-pink-200/80"
+              ? `${colors.activeBg} text-white`
+              : "bg-pink-50 text-pink-600 group-hover:bg-pink-100"
           }`}
         >
           {count}

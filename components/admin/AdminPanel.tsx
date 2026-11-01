@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Menu, X, Heart } from "lucide-react";
 import { readToken, writeToken } from "./auth";
 import { CATEGORIES, ContentSlug, Tab } from "./types";
 import LoginScreen from "./LoginScreen";
@@ -46,11 +46,10 @@ export default function AdminPanel() {
   const [restoring, setRestoring] = useState(true);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Tab is derived from URL. Defaults to wishes if none.
   const tab = keyToTab(searchParams.get("tab"));
 
-  // Restore session from localStorage on mount
   useEffect(() => {
     const saved = readToken();
     if (saved) setToken(saved);
@@ -65,14 +64,14 @@ export default function AdminPanel() {
   const handleLogout = useCallback(() => {
     writeToken(null);
     setToken(null);
-    // Clear URL state on logout so next login starts fresh
+    setMobileOpen(false);
     router.replace("/admin");
   }, [router]);
 
-  // Navigate by writing the tab to the URL
   const handleSelectTab = useCallback(
     (next: Tab) => {
       const key = tabToKey(next);
+      setMobileOpen(false);
       router.replace(`/admin?tab=${encodeURIComponent(key)}`, {
         scroll: false,
       });
@@ -80,7 +79,6 @@ export default function AdminPanel() {
     [router],
   );
 
-  // Load counts when logged in
   const loadCounts = useCallback(async () => {
     if (!token) return;
     try {
@@ -109,15 +107,15 @@ export default function AdminPanel() {
   return (
     <MotionConfig reducedMotion="user">
       {restoring ? (
-        <div className="flex min-h-dvh items-center justify-center bg-pink-50">
-          <Loader2 className="h-6 w-6 animate-spin text-pink-500" />
+        <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-pink-50 via-white to-blue-50">
+          <Loader2 className="h-6 w-6 animate-spin text-pink-400" />
         </div>
       ) : !token ? (
         <LoginScreen onLoggedIn={handleLogin} />
       ) : (
-        <div className="flex h-dvh overflow-hidden bg-pink-50">
-          {/* Sidebar — hidden on small screens, shown on lg+ */}
-          <div className="hidden w-64 shrink-0 lg:block">
+        <div className="flex h-dvh overflow-hidden bg-gradient-to-br from-pink-50 via-white to-blue-50">
+          {/* Desktop Sidebar */}
+          <div className="hidden w-72 shrink-0 lg:block">
             <Sidebar
               categories={CATEGORIES}
               counts={counts}
@@ -127,38 +125,73 @@ export default function AdminPanel() {
             />
           </div>
 
-          {/* Mobile nav strip */}
-          <div className="absolute inset-x-0 top-0 z-10 flex items-center gap-2 border-b border-pink-100 bg-white px-3 py-2 lg:hidden">
-            <select
-              value={tabToKey(tab)}
-              onChange={(e) => {
-                const key = e.target.value;
-                handleSelectTab(keyToTab(key));
-              }}
-              className="flex-1 rounded-xl border border-pink-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
-            >
-              <optgroup label="Content">
-                {CATEGORIES.map((c) => (
-                  <option key={c.slug} value={`category:${c.slug}`}>
-                    {c.label}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Tools">
-                <option value="video">Main Video</option>
-                <option value="email">Send Email</option>
-              </optgroup>
-            </select>
+          {/* Mobile top bar */}
+          <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-pink-100 bg-white/90 px-4 py-3 backdrop-blur-md lg:hidden">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-pink-400 to-blue-400 shadow-sm shadow-pink-200">
+                <Heart className="h-4 w-4 fill-white text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold leading-tight text-slate-800">
+                  Admin Panel
+                </p>
+                <p className="text-[10px] font-medium text-pink-500">
+                  Birthday experience
+                </p>
+              </div>
+            </div>
             <button
-              onClick={handleLogout}
-              className="rounded-xl border border-pink-200 bg-white px-3 py-2 text-xs font-medium text-rose-600"
+              onClick={() => setMobileOpen(true)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-pink-100 bg-white text-slate-600 active:scale-95"
+              aria-label="Open menu"
             >
-              Log out
+              <Menu className="h-5 w-5" />
             </button>
           </div>
 
+          {/* Mobile drawer */}
+          <AnimatePresence>
+            {mobileOpen && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-[2px] lg:hidden"
+                  onClick={() => setMobileOpen(false)}
+                />
+                <motion.div
+                  initial={{ x: "-100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "-100%" }}
+                  transition={{ type: "spring", stiffness: 320, damping: 32 }}
+                  className="fixed inset-y-0 left-0 z-50 w-[85%] max-w-xs lg:hidden"
+                >
+                  <div className="relative h-full">
+                    <Sidebar
+                      categories={CATEGORIES}
+                      counts={counts}
+                      activeTab={tab}
+                      onSelect={handleSelectTab}
+                      onLogout={handleLogout}
+                      onClose={() => setMobileOpen(false)}
+                    />
+                    <button
+                      onClick={() => setMobileOpen(false)}
+                      className="absolute right-3 top-4 flex h-8 w-8 items-center justify-center rounded-lg bg-white/80 text-slate-500 shadow-sm backdrop-blur active:scale-95"
+                      aria-label="Close menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+
           {/* Main content */}
-          <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+          <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
             <div className="mx-auto max-w-4xl px-4 py-6 sm:px-8 sm:py-8">
               <AnimatePresence mode="wait">
                 <motion.div
