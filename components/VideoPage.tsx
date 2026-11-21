@@ -539,7 +539,7 @@ export default function VideoPage({ video, loading, onNext }: Props) {
         : { title: "Close your eyes & make a wish", hand: "blow out the candles, birthday boy ♡" }
       : sliced
         ? { title: "Sweet slice cut!", hand: "opening your birthday video…" }
-        : { title: "Cut where you want a slice", hand: "move your finger or cursor on the cake & tap ♡" };
+        : { title: "Cut where you want a slice meray liye baray wala katna", hand: "move your finger or cursor on the cake & tap ♡" };
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4 py-8 sm:px-6 sm:py-12">
