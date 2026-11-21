@@ -844,7 +844,6 @@ function PrankScreen({ onReturn }: { onReturn: () => void }) {
           transition={{ type: "spring", stiffness: 160, damping: 14 }}
           className="h-32 w-32 sm:h-40 sm:w-40" 
         />
-
          <motion.h2
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
