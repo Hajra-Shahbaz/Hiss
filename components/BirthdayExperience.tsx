@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import WelcomePage from "./WelcomePage";
-import AgeGate from "./AgeGate";
-import BalloonPage from "./BalloonPage";
 import VideoPage from "./VideoPage";
 import Wishes from "./Wishes";
 import Congratulations from "./Congratulations";
@@ -17,8 +16,6 @@ import ThankYou from "./ThankYou";
 
 export type Stage =
   | "welcome"
-  | "age"
-  | "balloons"
   | "video"
   | "wishes"
   | "congratulations"
@@ -31,8 +28,6 @@ export type Stage =
 
 const POST_WISHES_ORDER: Stage[] = [
   "welcome",
-  "age",
-  "balloons",
   "video",
   "wishes",
   "congratulations",
@@ -52,10 +47,15 @@ const GATED_STAGES: Stage[] = [
   "thankyou",
 ];
 
-export default function BirthdayExperience() {
-  const [stage, setStage] = useState<Stage>("welcome");
+// Stages where the shared top nav should be hidden
+const HIDE_NAV_STAGES: Stage[] = ["welcome", "secret"];
 
-  // Session-only state (never persisted, never in cookies)
+export default function BirthdayExperience() {
+  // 1. Initialize with a safe default that matches the server
+  const [stage, setStage] = useState<Stage>("welcome");
+  const [isClient, setIsClient] = useState(false);
+
+  // Session-only state (now initialized from sessionStorage)
   const [gateToken, setGateToken] = useState<string | null>(null);
   const [noAttempted, setNoAttempted] = useState(false);
   const [verifiedOnce, setVerifiedOnce] = useState(false);
@@ -69,9 +69,45 @@ export default function BirthdayExperience() {
 
   const [contentLoading, setContentLoading] = useState(false);
 
-  // Fetch public content once when the user reaches the video stage
+  // 2. Hydrate the saved stage AND gateToken AFTER mounting to prevent SSR mismatch
   useEffect(() => {
-    if (stage !== "video" || publicContent.wishes) return;
+    setIsClient(true);
+    const savedStage = sessionStorage.getItem("current_stage") as Stage;
+    if (savedStage && POST_WISHES_ORDER.includes(savedStage)) {
+      setStage(savedStage);
+    }
+
+    const savedToken = sessionStorage.getItem("gate_token");
+    if (savedToken) {
+      setGateToken(savedToken);
+      setVerifiedOnce(true);
+    }
+  }, []);
+
+  // ── Save stage and gateToken to sessionStorage whenever they change ──
+  useEffect(() => {
+    if (isClient) {
+      sessionStorage.setItem("current_stage", stage);
+    }
+  }, [stage, isClient]);
+
+  useEffect(() => {
+    if (isClient) {
+      if (gateToken) {
+        sessionStorage.setItem("gate_token", gateToken);
+      } else {
+        sessionStorage.removeItem("gate_token");
+      }
+    }
+  }, [gateToken, isClient]);
+
+  // ── Fetch public content exactly ONCE, as soon as we leave "welcome" ──
+  const fetchedRef = useRef(false);
+
+  useEffect(() => {
+    if (stage === "welcome") return;
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
 
     let cancelled = false;
     setContentLoading(true);
@@ -96,13 +132,13 @@ export default function BirthdayExperience() {
         setPublicContent({ wishes: [], congratulations: [], video: null });
       })
       .finally(() => {
-        if (!cancelled) setContentLoading(false);
+        setContentLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [stage, publicContent.wishes]);
+  }, [stage]);
 
   const goTo = useCallback((next: Stage) => setStage(next), []);
 
@@ -110,7 +146,6 @@ export default function BirthdayExperience() {
     const idx = POST_WISHES_ORDER.indexOf(stage);
     if (idx === -1 || idx === POST_WISHES_ORDER.length - 1) return;
 
-    // Safety net: never skip the gate to gated content
     const candidate = POST_WISHES_ORDER[idx + 1];
     if (GATED_STAGES.includes(candidate) && !gateToken) {
       setStage("secret");
@@ -130,6 +165,11 @@ export default function BirthdayExperience() {
     setGateToken(null);
     setNoAttempted(false);
     setVerifiedOnce(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("current_stage");
+      sessionStorage.removeItem("typed_wishes_ids"); 
+      sessionStorage.removeItem("gate_token");
+    }
   }, []);
 
   const handleSecretVerified = useCallback((token: string) => {
@@ -142,17 +182,68 @@ export default function BirthdayExperience() {
     if (gateToken) setStage("memories");
   }, [gateToken]);
 
-  const common = useMemo(
-    () => ({ next, previous, restart, goTo }),
-    [next, previous, restart, goTo],
-  );
+  const showNav = !HIDE_NAV_STAGES.includes(stage);
+  const canGoBack = POST_WISHES_ORDER.indexOf(stage) > 0;
+  const canGoNext = POST_WISHES_ORDER.indexOf(stage) < POST_WISHES_ORDER.length - 1;
+
+  // Disables scrolling on the main wrapper ONLY for the wishes stage
+  const isWishesStage = stage === "wishes";
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="relative mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-6 sm:px-6">
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <FloatingBackdrop />
-        </div>
+      <main 
+        className={`relative flex w-full flex-col overflow-x-hidden ${
+          isWishesStage ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]"
+        }`}
+      >
+        {/* ── GLOBAL TOP NAV ── */}
+        <AnimatePresence>
+          {showNav && (
+            <motion.nav
+              key="topnav"
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-3 px-4 pt-4 md:px-6 md:pt-6"
+            >
+              {/* soft scrim so buttons stay legible over any stage */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
+
+              {/* BACK — small circular arrow */}
+              {canGoBack ? (
+                <motion.button
+                  onClick={previous}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  className="group pointer-events-auto relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#f5d68a]/30 bg-white/[0.05] text-[#e0d7ff] backdrop-blur-md transition-colors hover:border-[#f5d68a]/70 hover:text-[#f5d68a]"
+                  aria-label="Go back"
+                >
+                  <ArrowLeft className="relative h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+                </motion.button>
+              ) : (
+                <div aria-hidden className="h-9 w-9" />
+              )}
+
+              {/* NEXT — small gold circular arrow */}
+              {canGoNext ? (
+                <motion.button
+                  onClick={next}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
+                  className="group pointer-events-auto relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-[#0b0a1f]"
+                  aria-label="Go next"
+                >
+                  <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </motion.button>
+              ) : (
+                <div aria-hidden className="h-9 w-9" />
+              )}
+            </motion.nav>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -161,19 +252,15 @@ export default function BirthdayExperience() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            className="flex flex-1 flex-col"
+            className={`flex flex-1 flex-col ${isWishesStage ? "h-full overflow-hidden" : "pt-14"}`}
           >
             {stage === "welcome" && (
               <WelcomePage
                 noAttempted={noAttempted}
-                onYes={() => goTo("age")}
+                onYes={() => goTo("video")}
                 onNo={() => setNoAttempted(true)}
               />
             )}
-
-            {stage === "age" && <AgeGate onVerified={() => goTo("video")} />}
-
-            {stage === "balloons" && <BalloonPage onComplete={() => goTo("video")} />}
 
             {stage === "video" && (
               <VideoPage
@@ -251,41 +338,7 @@ export default function BirthdayExperience() {
             )}
           </motion.div>
         </AnimatePresence>
-
-        <footer className="mt-8 pb-2 text-center text-xs text-slate-400">
-          made with 💙 · {verifiedOnce ? "for you" : "just for you"}
-        </footer>
       </main>
     </MotionConfig>
-  );
-}
-
-function FloatingBackdrop() {
-  // Gentle decorative drift, respects prefers-reduced-motion via MotionConfig
-  const items = [
-    { top: "8%", left: "6%", size: 6, delay: 0, dur: 9 },
-    { top: "22%", left: "88%", size: 5, delay: 1.2, dur: 11 },
-    { top: "60%", left: "4%", size: 4, delay: 2.1, dur: 10 },
-    { top: "78%", left: "92%", size: 6, delay: 0.6, dur: 12 },
-    { top: "40%", left: "50%", size: 3, delay: 1.8, dur: 13 },
-  ];
-
-  return (
-    <>
-      {items.map((it, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full bg-blue-200/70"
-          style={{ top: it.top, left: it.left, width: it.size, height: it.size }}
-          animate={{ y: [0, -18, 0], opacity: [0.4, 0.9, 0.4] }}
-          transition={{
-            duration: it.dur,
-            delay: it.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </>
   );
 }

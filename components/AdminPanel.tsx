@@ -166,18 +166,21 @@ const CATEGORIES: CategoryDef[] = [
 ];
 
 // ─────────────────────────────────────────────
-// Shared pink theme styles
+// 🩵 Shared soft-blue theme styles
 // ─────────────────────────────────────────────
 
-const PINK = {
-  card: "rounded-2xl border border-pink-100 bg-white shadow-sm shadow-pink-100/60",
+const BLUE = {
+  card:
+    "rounded-3xl border border-sky-100/80 bg-white/80 backdrop-blur-sm shadow-[0_8px_30px_-12px_rgba(56,189,248,0.25)] shadow-sky-200/50",
+  cardHover:
+    "transition-all duration-300 hover:shadow-[0_12px_40px_-12px_rgba(56,189,248,0.35)] hover:-translate-y-0.5",
   primaryBtn:
-    "inline-flex items-center justify-center gap-1.5 rounded-full bg-pink-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-pink-600 disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-sky-400 via-blue-400 to-indigo-400 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-sky-200/60 transition-all duration-200 hover:shadow-lg hover:shadow-sky-300/60 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none",
   secondaryBtn:
-    "inline-flex items-center justify-center gap-1.5 rounded-full border border-pink-200 bg-white px-4 py-2 text-xs font-medium text-pink-600 transition hover:bg-pink-50 disabled:opacity-50",
+    "inline-flex items-center justify-center gap-1.5 rounded-full border border-sky-200 bg-white/90 px-4 py-2 text-xs font-semibold text-sky-600 shadow-sm shadow-sky-100/60 transition-all duration-200 hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50",
   input:
-    "w-full rounded-xl border border-pink-200 bg-pink-50/40 px-3 py-2 text-sm text-slate-800 placeholder:text-pink-300 focus:border-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-200",
-  label: "mb-1 block text-xs font-medium text-pink-700",
+    "w-full rounded-2xl border border-sky-200 bg-sky-50/50 px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-sky-300 transition-all duration-200 focus:border-sky-400 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-200/60",
+  label: "mb-1.5 block text-xs font-semibold text-sky-700 tracking-wide",
 };
 
 // ─────────────────────────────────────────────
@@ -188,7 +191,6 @@ export default function AdminPanel() {
   const [token, setToken] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(true);
 
-  // Restore session on mount so refresh keeps you logged in.
   useEffect(() => {
     const saved = readToken();
     if (saved) setToken(saved);
@@ -207,11 +209,18 @@ export default function AdminPanel() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <main className="min-h-dvh w-full bg-pink-50">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+      <main className="relative min-h-dvh w-full overflow-hidden bg-gradient-to-br from-sky-50 via-blue-50 to-indigo-50">
+        {/* soft ambient blobs */}
+        <div aria-hidden className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -left-24 h-72 w-72 rounded-full bg-sky-200/40 blur-3xl" />
+          <div className="absolute top-1/3 -right-32 h-80 w-80 rounded-full bg-blue-200/40 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-indigo-200/30 blur-3xl" />
+        </div>
+
+        <div className="relative mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
           {restoring ? (
             <div className="mt-24 flex justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-pink-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
             </div>
           ) : !token ? (
             <LoginScreen onLoggedIn={handleLogin} />
@@ -258,17 +267,19 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
   }
 
   return (
-    <div className="mx-auto mt-24 max-w-sm">
-      <div className={`${PINK.card} p-8`}>
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
-          <ChevronRight className="h-6 w-6 text-pink-500" />
+    <div className="mx-auto mt-20 max-w-sm">
+      <div className={`${BLUE.card} relative overflow-hidden p-8`}>
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-sky-200 via-blue-300 to-indigo-300 shadow-lg shadow-sky-200/60">
+          <span className="text-2xl">🫧</span>
         </div>
-        <h1 className="text-center text-xl font-semibold text-pink-700">Admin</h1>
-        <p className="mt-1 text-center text-sm text-pink-500">
-          Enter the admin PIN to continue.
+        <h1 className="text-center text-2xl font-bold tracking-tight text-sky-700">
+          Hi, lovely admin
+        </h1>
+        <p className="mt-1.5 text-center text-sm text-sky-500">
+          Pop in your secret PIN ✨
         </p>
 
-        <form onSubmit={submit} className="mt-6 space-y-4">
+        <form onSubmit={submit} className="mt-7 space-y-4">
           <input
             type="password"
             autoComplete="off"
@@ -276,23 +287,28 @@ function LoginScreen({ onLoggedIn }: { onLoggedIn: (token: string) => void }) {
             value={pin}
             onChange={(e) => setPin(e.target.value)}
             placeholder="• • • •"
-            className={`${PINK.input} text-center tracking-[0.4em]`}
+            className={`${BLUE.input} text-center text-lg tracking-[0.5em]`}
             disabled={busy}
           />
           <button
             type="submit"
             disabled={busy || !pin}
-            className={`${PINK.primaryBtn} w-full`}
+            className={`${BLUE.primaryBtn} w-full py-2.5 text-sm`}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {busy ? "Logging in…" : "Log in"}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <span>💙</span>}
+            {busy ? "Opening…" : "Let me in"}
           </button>
         </form>
 
         {error && (
-          <p className="mt-4 text-center text-sm text-rose-500">{error}</p>
+          <p className="mt-4 rounded-xl bg-rose-50 px-3 py-2 text-center text-sm font-medium text-rose-500">
+            {error}
+          </p>
         )}
       </div>
+      <p className="mt-6 text-center text-xs text-sky-400">
+        Made with 💙 for the birthday magic
+      </p>
     </div>
   );
 }
@@ -338,19 +354,23 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     <div>
       <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-pink-700">Admin Dashboard</h1>
-          <p className="text-xs text-pink-500">Manage the birthday experience</p>
+          <h1 className="bg-gradient-to-r from-sky-600 to-indigo-500 bg-clip-text text-2xl font-bold text-transparent">
+            Admin Dashboard
+          </h1>
+          <p className="mt-0.5 text-xs text-sky-500">
+            💫 Manage the birthday experience
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setRefreshKey((k) => k + 1)}
-            className={PINK.secondaryBtn}
+            className={BLUE.secondaryBtn}
             title="Refresh counts"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </button>
-          <button onClick={onLogout} className={PINK.secondaryBtn}>
+          <button onClick={onLogout} className={BLUE.secondaryBtn}>
             <LogOut className="h-3.5 w-3.5" />
             Log out
           </button>
@@ -365,17 +385,17 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             <button
               key={c.slug}
               onClick={() => setTab({ kind: "category", slug: c.slug })}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
                 active
-                  ? "border-pink-500 bg-pink-500 text-white"
-                  : "border-pink-200 bg-white text-pink-600 hover:bg-pink-50"
+                  ? "border-sky-400 bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-md shadow-sky-200/60 -translate-y-0.5"
+                  : "border-sky-200 bg-white/80 text-sky-600 hover:bg-sky-50 hover:-translate-y-0.5"
               }`}
             >
               {c.label}
               {typeof count === "number" && (
                 <span
                   className={`rounded-full px-1.5 text-[10px] ${
-                    active ? "bg-white/25" : "bg-pink-100 text-pink-700"
+                    active ? "bg-white/25" : "bg-sky-100 text-sky-700"
                   }`}
                 >
                   {count}
@@ -386,10 +406,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         })}
         <button
           onClick={() => setTab({ kind: "video" })}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
             tab.kind === "video"
-              ? "border-pink-500 bg-pink-500 text-white"
-              : "border-pink-200 bg-white text-pink-600 hover:bg-pink-50"
+              ? "border-sky-400 bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-md shadow-sky-200/60 -translate-y-0.5"
+              : "border-sky-200 bg-white/80 text-sky-600 hover:bg-sky-50 hover:-translate-y-0.5"
           }`}
         >
           <VideoIcon className="h-3.5 w-3.5" />
@@ -397,10 +417,10 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         </button>
         <button
           onClick={() => setTab({ kind: "email" })}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 ${
             tab.kind === "email"
-              ? "border-pink-500 bg-pink-500 text-white"
-              : "border-pink-200 bg-white text-pink-600 hover:bg-pink-50"
+              ? "border-sky-400 bg-gradient-to-r from-sky-400 to-blue-400 text-white shadow-md shadow-sky-200/60 -translate-y-0.5"
+              : "border-sky-200 bg-white/80 text-sky-600 hover:bg-sky-50 hover:-translate-y-0.5"
           }`}
         >
           <Mail className="h-3.5 w-3.5" />
@@ -592,16 +612,16 @@ function ContentTab({
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <label className="inline-flex items-center gap-2 text-xs text-pink-600">
+        <label className="inline-flex items-center gap-2 text-xs text-sky-600">
           <input
             type="checkbox"
             checked={showDeleted}
             onChange={(e) => setShowDeleted(e.target.checked)}
-            className="h-3.5 w-3.5 accent-pink-500"
+            className="h-3.5 w-3.5 accent-sky-500"
           />
           Show deleted
         </label>
-        <button onClick={() => setEditing("new")} className={PINK.primaryBtn}>
+        <button onClick={() => setEditing("new")} className={BLUE.primaryBtn}>
           <Plus className="h-3.5 w-3.5" />
           Add {category.label}
         </button>
@@ -612,25 +632,26 @@ function ContentTab({
       {items === null ? (
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 animate-pulse rounded-2xl bg-pink-100" />
+            <div key={i} className="h-16 animate-pulse rounded-3xl bg-sky-100" />
           ))}
         </div>
       ) : visible.length === 0 ? (
-        <div className={`${PINK.card} flex h-32 items-center justify-center text-sm text-pink-500`}>
-          Nothing here yet.
+        <div className={`${BLUE.card} flex h-32 flex-col items-center justify-center gap-1 text-sm text-sky-500`}>
+          <span className="text-2xl">🫧</span>
+          <span>Nothing here yet — add your first one!</span>
         </div>
       ) : (
         <div className="space-y-2">
           {visible.map((doc, i) => (
             <div
               key={doc._id}
-              className={`${PINK.card} flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between ${
+              className={`${BLUE.card} ${BLUE.cardHover} flex flex-col gap-3 p-3.5 sm:flex-row sm:items-center sm:justify-between ${
                 doc.isDeleted ? "opacity-70" : ""
               }`}
             >
               <div className="min-w-0 flex-1">
                 <PreviewLine category={category} doc={doc} />
-                <p className="mt-1 text-[11px] text-pink-400">
+                <p className="mt-1 text-[11px] text-sky-400">
                   order {doc.order} · id {doc._id.slice(-6)}
                 </p>
               </div>
@@ -739,7 +760,7 @@ function IconBtn({
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-pink-200 bg-white text-pink-600 transition hover:bg-pink-50 disabled:opacity-40"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-sky-200 bg-white text-sky-600 transition-all duration-200 hover:bg-sky-50 hover:border-sky-300 hover:-translate-y-0.5 active:scale-90 disabled:opacity-40"
     >
       {children}
     </button>
@@ -781,7 +802,7 @@ function PreviewLine({ category, doc }: { category: CategoryDef; doc: ContentDoc
         <img
           src={doc.media}
           alt=""
-          className="h-10 w-14 rounded-md border border-pink-100 object-cover"
+          className="h-10 w-14 rounded-md border border-sky-100 object-cover"
         />
       )}
       <p className="truncate text-sm text-slate-700">
@@ -917,13 +938,13 @@ function ContentForm({
   return (
     <Modal onClose={onClose}>
       <form onSubmit={submit} className="space-y-4">
-        <h2 className="text-lg font-semibold text-pink-700">
+        <h2 className="text-lg font-bold text-sky-700">
           {isNew ? `Add ${category.label}` : `Edit ${category.label}`}
         </h2>
 
         {category.fields.map((f) => (
           <div key={f.name}>
-            <label className={PINK.label}>
+            <label className={BLUE.label}>
               {f.label}
               {f.required && <span className="text-rose-500"> *</span>}
             </label>
@@ -931,7 +952,7 @@ function ContentForm({
             {f.kind === "media" ? (
               <div className="space-y-2">
                 {values.media ? (
-                  <div className="relative overflow-hidden rounded-xl border border-pink-200">
+                  <div className="relative overflow-hidden rounded-xl border border-sky-200">
                     {mediaType === "video" ? (
                       <video
                         src={values.media}
@@ -943,7 +964,7 @@ function ContentForm({
                       <img
                         src={values.media}
                         alt=""
-                        className="h-40 w-full bg-pink-50 object-contain"
+                        className="h-40 w-full bg-sky-50 object-contain"
                       />
                     )}
                   </div>
@@ -960,7 +981,7 @@ function ContentForm({
                     type="button"
                     onClick={() => fileRef.current?.click()}
                     disabled={uploading}
-                    className={PINK.secondaryBtn}
+                    className={BLUE.secondaryBtn}
                   >
                     {uploading ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -987,7 +1008,7 @@ function ContentForm({
                   value={values.media}
                   onChange={(e) => setField("media", e.target.value)}
                   placeholder="…or paste a URL"
-                  className={`${PINK.input} text-xs`}
+                  className={`${BLUE.input} text-xs`}
                 />
               </div>
             ) : f.kind === "textarea" ? (
@@ -996,7 +1017,7 @@ function ContentForm({
                 onChange={(e) => setField(f.name, e.target.value)}
                 placeholder={f.placeholder}
                 rows={3}
-                className={`${PINK.input} resize-none`}
+                className={`${BLUE.input} resize-none`}
               />
             ) : (
               <input
@@ -1004,7 +1025,7 @@ function ContentForm({
                 value={values[f.name]}
                 onChange={(e) => setField(f.name, e.target.value)}
                 placeholder={f.placeholder}
-                className={PINK.input}
+                className={BLUE.input}
               />
             )}
           </div>
@@ -1013,13 +1034,13 @@ function ContentForm({
         {error && <p className="text-sm text-rose-500">{error}</p>}
 
         <div className="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className={PINK.secondaryBtn}>
+          <button type="button" onClick={onClose} className={BLUE.secondaryBtn}>
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving || uploading}
-            className={PINK.primaryBtn}
+            className={BLUE.primaryBtn}
           >
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {isNew ? "Create" : "Save"}
@@ -1122,13 +1143,13 @@ function VideoTab({ token }: { token: string }) {
   }
 
   if (loading || !doc) {
-    return <div className={`${PINK.card} h-40 animate-pulse bg-pink-100`} />;
+    return <div className="h-40 animate-pulse rounded-3xl bg-sky-100" />;
   }
 
   return (
-    <form onSubmit={save} className={`${PINK.card} space-y-4 p-5`}>
-      <h2 className="text-lg font-semibold text-pink-700">Main Video</h2>
-      <p className="text-xs text-pink-500">
+    <form onSubmit={save} className={`${BLUE.card} space-y-4 p-5`}>
+      <h2 className="text-lg font-bold text-sky-700">Main Video</h2>
+      <p className="text-xs text-sky-500">
         This is the video shown right after the balloons.
       </p>
 
@@ -1152,7 +1173,7 @@ function VideoTab({ token }: { token: string }) {
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={uploading}
-          className={PINK.secondaryBtn}
+          className={BLUE.secondaryBtn}
         >
           {uploading ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1164,12 +1185,12 @@ function VideoTab({ token }: { token: string }) {
       </div>
 
       <div>
-        <label className={PINK.label}>Description</label>
+        <label className={BLUE.label}>Description</label>
         <textarea
           value={doc.description}
           onChange={(e) => setDoc({ ...doc, description: e.target.value })}
           rows={3}
-          className={`${PINK.input} resize-none`}
+          className={`${BLUE.input} resize-none`}
           placeholder="A short note shown below the video"
         />
       </div>
@@ -1180,7 +1201,7 @@ function VideoTab({ token }: { token: string }) {
         <button
           type="submit"
           disabled={saving || uploading}
-          className={PINK.primaryBtn}
+          className={BLUE.primaryBtn}
         >
           {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           Save
@@ -1256,9 +1277,9 @@ function EmailTab({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={submit} className={`${PINK.card} space-y-4 p-5`}>
-      <h2 className="text-lg font-semibold text-pink-700">Send an Email</h2>
-      <p className="text-xs text-pink-500">
+    <form onSubmit={submit} className={`${BLUE.card} space-y-4 p-5`}>
+      <h2 className="text-lg font-bold text-sky-700">Send an Email</h2>
+      <p className="text-xs text-sky-500">
         Uses the reusable HTML template in <code>lib/email.ts</code>.
       </p>
 
@@ -1269,7 +1290,7 @@ function EmailTab({ token }: { token: string }) {
             value={form.to}
             onChange={(e) => set("to", e.target.value)}
             placeholder="someone@example.com"
-            className={PINK.input}
+            className={BLUE.input}
             required
           />
         </Field>
@@ -1279,7 +1300,7 @@ function EmailTab({ token }: { token: string }) {
             value={form.recipientName}
             onChange={(e) => set("recipientName", e.target.value)}
             placeholder="Their name"
-            className={PINK.input}
+            className={BLUE.input}
             required
           />
         </Field>
@@ -1288,7 +1309,7 @@ function EmailTab({ token }: { token: string }) {
             type="text"
             value={form.subject}
             onChange={(e) => set("subject", e.target.value)}
-            className={PINK.input}
+            className={BLUE.input}
             required
           />
         </Field>
@@ -1297,7 +1318,7 @@ function EmailTab({ token }: { token: string }) {
             type="text"
             value={form.heading}
             onChange={(e) => set("heading", e.target.value)}
-            className={PINK.input}
+            className={BLUE.input}
             required
           />
         </Field>
@@ -1308,7 +1329,7 @@ function EmailTab({ token }: { token: string }) {
           value={form.message}
           onChange={(e) => set("message", e.target.value)}
           rows={5}
-          className={`${PINK.input} resize-none`}
+          className={`${BLUE.input} resize-none`}
           required
         />
       </Field>
@@ -1320,7 +1341,7 @@ function EmailTab({ token }: { token: string }) {
             value={form.imageUrl}
             onChange={(e) => set("imageUrl", e.target.value)}
             placeholder="https://…"
-            className={PINK.input}
+            className={BLUE.input}
           />
         </Field>
         <Field label="Button text (optional)">
@@ -1328,7 +1349,7 @@ function EmailTab({ token }: { token: string }) {
             type="text"
             value={form.buttonText}
             onChange={(e) => set("buttonText", e.target.value)}
-            className={PINK.input}
+            className={BLUE.input}
           />
         </Field>
         <Field label="Button URL (optional)">
@@ -1336,7 +1357,7 @@ function EmailTab({ token }: { token: string }) {
             type="url"
             value={form.buttonUrl}
             onChange={(e) => set("buttonUrl", e.target.value)}
-            className={PINK.input}
+            className={BLUE.input}
           />
         </Field>
         <Field label="Closing (optional)">
@@ -1344,7 +1365,7 @@ function EmailTab({ token }: { token: string }) {
             type="text"
             value={form.closing}
             onChange={(e) => set("closing", e.target.value)}
-            className={PINK.input}
+            className={BLUE.input}
           />
         </Field>
       </div>
@@ -1352,7 +1373,7 @@ function EmailTab({ token }: { token: string }) {
       {error && <p className="text-sm text-rose-500">{error}</p>}
 
       <div className="flex justify-end">
-        <button type="submit" disabled={sending} className={PINK.primaryBtn}>
+        <button type="submit" disabled={sending} className={BLUE.primaryBtn}>
           {sending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -1378,7 +1399,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className={PINK.label}>
+      <label className={BLUE.label}>
         {label}
         {required && <span className="text-rose-500"> *</span>}
       </label>
@@ -1412,20 +1433,20 @@ function Modal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-pink-950/30 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-sky-950/30 p-4 backdrop-blur-sm"
         onClick={onClose}
       >
         <motion.div
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
-          transition={{ duration: 0.22 }}
-          className={`${PINK.card} my-8 w-full max-w-md p-5`}
+          transition={{ duration: 0.22, type: "spring", stiffness: 260, damping: 22 }}
+          className={`${BLUE.card} my-8 w-full max-w-md p-5`}
           onClick={(e) => e.stopPropagation()}
         >
           <button
             onClick={onClose}
-            className="float-right -mr-1 -mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-pink-400 hover:bg-pink-100 hover:text-pink-600"
+            className="float-right -mr-1 -mt-1 inline-flex h-7 w-7 items-center justify-center rounded-full text-sky-400 transition hover:bg-sky-100 hover:text-sky-600"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
@@ -1456,19 +1477,19 @@ function ConfirmDialog({
 }) {
   return (
     <Modal onClose={onCancel}>
-      <h2 className="text-lg font-semibold text-pink-700">{title}</h2>
+      <h2 className="text-lg font-bold text-sky-700">{title}</h2>
       <p className="mt-1 text-sm text-slate-600">{message}</p>
       <div className="mt-5 flex justify-end gap-2">
-        <button onClick={onCancel} className={PINK.secondaryBtn}>
+        <button onClick={onCancel} className={BLUE.secondaryBtn}>
           Cancel
         </button>
         <button
           onClick={onConfirm}
           disabled={busy}
-          className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-medium text-white ${
+          className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 active:scale-95 ${
             danger
-              ? "bg-rose-500 hover:bg-rose-600"
-              : "bg-pink-500 hover:bg-pink-600"
+              ? "bg-gradient-to-r from-rose-400 to-rose-500 shadow-md shadow-rose-200/60 hover:shadow-lg hover:shadow-rose-300/60"
+              : "bg-gradient-to-r from-sky-400 to-blue-400 shadow-md shadow-sky-200/60 hover:shadow-lg hover:shadow-sky-300/60"
           } disabled:opacity-50`}
         >
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -1484,10 +1505,11 @@ function Toast({ message }: { message: string | null }) {
     <AnimatePresence>
       {message && (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 8 }}
-          className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-pink-600 px-4 py-2 text-xs text-white shadow-lg shadow-pink-300/50"
+          initial={{ opacity: 0, y: 8, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 8, scale: 0.9 }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
+          className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-gradient-to-r from-sky-500 to-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-300/50"
         >
           <span className="inline-flex items-center gap-1.5">
             <Check className="h-3.5 w-3.5 text-white" />
