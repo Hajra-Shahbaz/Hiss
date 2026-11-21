@@ -791,7 +791,7 @@ export default function VideoPage({ video, loading, onNext }: Props) {
                       style={{ fontFamily: FONT_HAND }}
                     >
                       <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#f48fb1]" />
-                      cake cutting clip
+most waited moment....
                     </span>
                     <span className="rounded-full bg-[#f4f7ff] px-3 py-0.5 text-[11px] font-semibold tracking-wide text-[#4c6ed7] ring-1 ring-[#dfe7fb]">
                       HAPPY BIRTHDAY

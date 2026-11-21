@@ -59,6 +59,14 @@ function wrapDistance(raw: number, total: number, loop: boolean) {
   return r > total / 2 ? r - total : r;
 }
 
+
+
+const STAR = "M12 2.5 L14.7 9 L21.8 9.6 L16.4 14.2 L18.1 21.2 L12 17.4 L5.9 21.2 L7.6 14.2 L2.2 9.6 L9.3 9 Z";
+const HEART =
+  "M12 20.5 C5.5 15.2 2.5 11.5 2.5 8 C2.5 4.6 6.8 3.2 9.2 5.3 C10.5 6.4 11.4 7.3 12 8.4 C12.6 7.3 13.5 6.4 14.8 5.3 C17.2 3.2 21.5 4.6 21.5 8 C21.5 11.5 18.5 15.2 12 20.5 Z";
+
+
+
 /* ------------------------------------------------------------------ */
 /*  One photo / video card in the 3D album                             */
 /* ------------------------------------------------------------------ */
@@ -219,7 +227,7 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
   useEffect(() => {
     const link = document.createElement("link");
     link.href =
-      "https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600&display=swap";
+      "https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
     return () => {
@@ -340,27 +348,42 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
         transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 6 }}
       />
 
+
+
       {/* ---------------- content ---------------- */}
-      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-5 pb-14 pt-12 sm:px-8 md:pt-16">
-        <header className="mb-8 flex flex-col items-center text-center md:mb-10">
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-4 py-1.5 text-sm backdrop-blur"
-            style={{ color: INK_SOFT }}
-          >
-            <Sparkles className="h-4 w-4" style={{ color: ROSE }} />
-            Memories
-          </motion.div>
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col px-5 pb-6 pt-6 sm:px-8 md:pt-8">
+        <header className="mb-3 flex flex-col items-center text-center md:mb-4">
+       
           <motion.h2
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.7 }}
-            className="mt-5 text-4xl font-medium leading-[1.15] sm:text-5xl"
+            className="mt-3 text-4xl font-medium leading-[1.15] sm:text-5xl"
             style={{ fontFamily: "'Fraunces', Georgia, serif", color: INK }}
           >
             Things I keep close
           </motion.h2>
+
+          {/* doodle underline */}
+          <motion.svg
+            aria-hidden
+            viewBox="0 0 180 14"
+            fill="none"
+            className="mt-1 h-3 w-40sm:w-48"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 1 }}
+          >
+            <motion.path
+              d="M3 8 C30 2 55 12 90 6 S150 3 177 8"
+              stroke={ROSE}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ delay: 0.6, duration: 1 }}
+            />
+          </motion.svg>
         </header>
 
         {items === null ? (
@@ -378,7 +401,8 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              className="relative"
+              className="relative 
+               "
             >
               <motion.div
                 onPanStart={onPanStart}
@@ -412,74 +436,9 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
               />
             </motion.div>
 
-            {/* ---------------- controls ---------------- */}
-            <div className="mt-6 flex flex-col items-center gap-3">
-              {total > 1 && (
-                <div className="flex items-center gap-5">
-                  <button
-                    type="button"
-                    onClick={() => step(-1)}
-                    disabled={!loop && active === 0}
-                    aria-label="Previous memory"
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/70 shadow-sm backdrop-blur transition hover:bg-white disabled:opacity-40"
-                    style={{ color: INK }}
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-
-                  <span className="min-w-14 text-center text-sm tabular-nums" style={{ color: INK_SOFT }}>
-                    {active + 1} / {total}
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => step(1)}
-                    disabled={!loop && active === total - 1}
-                    aria-label="Next memory"
-                    className="flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/70 shadow-sm backdrop-blur transition hover:bg-white disabled:opacity-40"
-                    style={{ color: INK }}
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
-
-              {total > 1 && total <= 12 && (
-                <div className="flex items-center gap-1.5">
-                  {list.map((m, i) => (
-                    <button
-                      key={m._id}
-                      type="button"
-                      onClick={() => rollTo(i)}
-                      aria-label={`Go to memory ${i + 1}`}
-                      className="h-1.5 rounded-full transition-all"
-                      style={{
-                        width: i === active ? 24 : 6,
-                        background: i === active ? ROSE : "#e6cfdb",
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              <AnimatePresence>
-                {total > 1 && !hinted && (
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ delay: 1 }}
-                    className="text-sm"
-                    style={{ color: INK_SOFT }}
-                  >
-                    Drag or swipe to roll the album
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* ---------------- the note ---------------- */}
-            <div className="mx-auto mt-8 w-full max-w-2xl">
+         
+            {/* ---------------- the note (always shown in full) ---------------- */}
+            <div className="mx-auto mt-1 w-full max-w-2xl">
               <AnimatePresence mode="wait">
                 {current && current.description?.trim() && (
                   <motion.div
@@ -488,7 +447,7 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                     transition={{ duration: 0.35 }}
-                    className="relative rounded-2xl border border-white/90 px-7 pb-7 pt-9 text-center"
+                    className="relative rounded-2xl border border-white/90 px-6 pb-5 pt-8 text-center"
                     style={{
                       background: "rgba(255,253,252,0.85)",
                       boxShadow: "0 24px 50px -25px rgba(120,80,150,0.35)",
@@ -503,16 +462,47 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
                         boxShadow: "0 2px 6px rgba(120,80,150,0.15)",
                       }}
                     />
-                    <div className="max-h-52 overflow-y-auto">
-                      <p
-                        className="whitespace-pre-line text-[22px] leading-[1.45] sm:text-[26px]"
-                        style={{ fontFamily: "'Caveat', cursive", color: INK }}
-                      >
-                        {current.description}
-                      </p>
-                    </div>
+
+                    {/* little doodles on the note */}
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#e0829f"
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="pointer-events-none absolute -bottom-3 -right-2 h-7 w-7 rotate-12"
+                    >
+                      <path d={STAR} />
+                    </svg>
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#9d86e0"
+                      strokeWidth={1.6}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="pointer-events-none absolute -left-2 -top-2 h-6 w-6 -rotate-12"
+                    >
+                      <path d={HEART} />
+                    </svg>
+
+                    {/* full note, no scroll box, nothing cut off */}
+                    <p
+                      className="whitespace-pre-line break-words text-[20px] leading-[1.55] sm:text-[24px]"
+                      style={{
+                        fontFamily: "'Kalam', 'Segoe Print', cursive",
+                        fontWeight: 400,
+                        color: INK,
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {current.description}
+                    </p>
                     <Heart
-                      className="mx-auto mt-4 h-4 w-4"
+                      className="mx-auto mt-2 h-4 w-4"
                       style={{ color: "#e9a9bd" }}
                       fill="currentColor"
                     />
@@ -523,33 +513,7 @@ export default function Memories({ gateToken, onNext, onPrevious, onRestart }: P
           </>
         )}
 
-        {/* ---------------- page navigation ---------------- */}
-        <nav className="mt-14 flex flex-wrap items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={onPrevious}
-            className="flex items-center gap-2 rounded-full border border-white/80 bg-white/60 px-5 py-2.5 text-sm backdrop-blur transition hover:bg-white"
-            style={{ color: INK }}
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
-          <button
-            type="button"
-            onClick={onRestart}
-            className="flex items-center gap-2 rounded-full border border-white/80 bg-white/60 px-5 py-2.5 text-sm backdrop-blur transition hover:bg-white"
-            style={{ color: INK_SOFT }}
-          >
-            <RotateCcw className="h-4 w-4" /> Start over
-          </button>
-          <button
-            type="button"
-            onClick={onNext}
-            className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium text-white shadow-lg shadow-[#c4607f]/25 transition hover:brightness-105"
-            style={{ background: "linear-gradient(135deg,#e0829f,#9d86e0)" }}
-          >
-            Continue <ArrowRight className="h-4 w-4" />
-          </button>
-        </nav>
+
       </div>
     </div>
   );

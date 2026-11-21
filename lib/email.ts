@@ -1,11 +1,16 @@
 import nodemailer, { Transporter } from "nodemailer";
 import type { EmailInput } from "./validation";
 
+export interface PersonalEmailInput extends EmailInput {
+  monogram?: string; // e.g. "U" or "U & A"
+  photoCaption?: string;
+  replyTo?: string;
+}
+
 let cachedTransport: Transporter | null = null;
+let cachedConfigKey = "";
 
 function getTransport(): Transporter {
-  if (cachedTransport) return cachedTransport;
-
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT ?? 587);
   const user = process.env.SMTP_USER;
@@ -17,16 +22,24 @@ function getTransport(): Transporter {
     throw new Error("SMTP credentials missing from environment");
   }
 
+  const configKey = `${host}:${port}:${user}:${secure}`;
+  if (cachedTransport && cachedConfigKey === configKey) {
+    return cachedTransport;
+  }
+
   cachedTransport = nodemailer.createTransport({
     host,
     port,
     secure,
     auth: { user, pass },
   });
+  cachedConfigKey = configKey;
   return cachedTransport;
 }
 
-export async function sendEmail(input: EmailInput): Promise<{ id: string }> {
+export async function sendEmail(
+  input: PersonalEmailInput,
+): Promise<{ id: string }> {
   const from = process.env.EMAIL_FROM;
   if (!from) throw new Error("EMAIL_FROM missing from environment");
 
@@ -36,6 +49,7 @@ export async function sendEmail(input: EmailInput): Promise<{ id: string }> {
   const info = await getTransport().sendMail({
     from,
     to: input.to,
+    ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     subject: input.subject,
     html,
     text,
@@ -44,6 +58,7 @@ export async function sendEmail(input: EmailInput): Promise<{ id: string }> {
       "List-Unsubscribe": `<mailto:${from}?subject=unsubscribe>`,
     },
   });
+
   return { id: info.messageId };
 }
 
@@ -78,26 +93,41 @@ function safeUrl(u: string | undefined): string | null {
 }
 
 // ─────────────────────────────────────────────
-// Default sticker — inline SVG (no external
-// dependency, works in every email client).
-// Pink circle with a pink heart.
+// Design tokens
+//   Soft blush + dusty slate blue + warm cream.
+//   Refined, intimate, flat, and reliable across
+//   all major email clients.
 // ─────────────────────────────────────────────
 
-const DEFAULT_STICKER_URL =
-  "data:image/svg+xml;utf8," +
-  encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="48" fill="#fdf2f8"/>
-    <circle cx="50" cy="50" r="48" fill="none" stroke="#fbcfe8" stroke-width="2"/>
-    <path d="M50 78 C 30 60, 18 48, 18 36 A 14 14 0 0 1 50 30 A 14 14 0 0 1 82 36 C 82 48, 70 60, 50 78 Z" fill="#ec4899"/>
-  </svg>`);
+const C = {
+  ink: "#23263b", // deep midnight ink
+  body: "#3f435c", // warm charcoal-navy body text
+  muted: "#7c819c", // soft metadata & captions
+  blush: "#f4c2d7", // subtle romantic pink accent
+  blushSoft: "#fdf4f8", // gentle note surface
+  blushBorder: "#f2d5e2",
+  accent: "#c24178", // refined rose-berry CTA button
+  sky: "#b8cef5", // muted powder blue
+  skySoft: "#eef3fb", // calm outer stationery background
+  skyBorder: "#d7e3f7",
+  card: "#fffefe", // crisp warm-white paper
+};
+
+const FONT =
+  "'Plus Jakarta Sans','Inter','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
+const SERIF = "Georgia,'Times New Roman',serif";
 
 // ─────────────────────────────────────────────
-// ✨ Flat 2D · Soft Pink & Blue · Centered CTA
+// Template
 // ─────────────────────────────────────────────
 
-export function renderEmailTemplate(input: EmailInput): string {
+export function renderEmailTemplate(input: PersonalEmailInput): string {
   const safeHeading = escapeHtml(input.heading);
   const safeRecipient = escapeHtml(input.recipientName);
+  const safeMonogram = escapeHtml((input.monogram ?? "♡").trim().slice(0, 5));
+  const safeCaption = input.photoCaption
+    ? escapeHtml(input.photoCaption.trim())
+    : "";
   const messageHtml = nl2br(input.message);
   const closing = input.closing ? nl2br(input.closing) : "";
   const customImage = safeUrl(input.imageUrl);
@@ -108,82 +138,88 @@ export function renderEmailTemplate(input: EmailInput): string {
     input.message.replace(/\s+/g, " ").slice(0, 140),
   );
 
-  // Hero image (custom) — above message
-  const heroImage = customImage
+  const photoBlock = customImage
     ? `
-      <tr>
-        <td align="center" style="padding:0 40px 24px 40px;">
-          <img
-            src="${customImage}"
-            alt=""
-            width="520"
-            style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;border-radius:12px;"
-          />
-        </td>
-      </tr>`
+          <tr>
+            <td class="px" style="padding:0 44px 26px 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.skySoft};border:1px solid ${C.skyBorder};border-radius:16px;padding:12px;">
+                <tr>
+                  <td align="center">
+                    <img
+                      src="${escapeHtml(customImage)}"
+                      alt="${safeCaption || safeHeading}"
+                      width="490"
+                      style="display:block;width:100%;max-width:490px;height:auto;border:0;outline:none;text-decoration:none;border-radius:11px;"
+                    />
+                  </td>
+                </tr>
+                ${
+                  safeCaption
+                    ? `
+                <tr>
+                  <td align="center" style="padding:10px 8px 2px 8px;font-family:${SERIF};font-size:13px;font-style:italic;color:${C.muted};">
+                    ${safeCaption}
+                  </td>
+                </tr>`
+                    : `
+                <tr>
+                  <td align="right" style="padding:8px 6px 2px 6px;font-family:${SERIF};font-size:11px;letter-spacing:1.5px;color:${C.muted};">
+                    &#10022; &#183; &#10022;
+                  </td>
+                </tr>`
+                }
+              </table>
+            </td>
+          </tr>`
     : "";
 
-  // Default sticker — bottom-left below message
-  const sticker = !customImage
-    ? `
-      <tr>
-        <td align="left" style="padding:0 40px 24px 40px;">
-          <img
-            src="${DEFAULT_STICKER_URL}"
-            alt=""
-            width="80"
-            height="80"
-            style="display:block;width:80px;height:80px;border:0;outline:none;text-decoration:none;border-radius:12px;"
-          />
-        </td>
-      </tr>`
-    : "";
-
-  // ─── Clean 2D centered CTA button ───────────
-  // Solid pink pill. No gradient, no shadow.
-  // Renders identically in Gmail / Outlook / Apple Mail.
-  const button =
+  const buttonBlock =
     buttonText && buttonUrl
       ? `
-      <tr>
-        <td align="center" style="padding:12px 40px 32px 40px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-            <tr>
-              <td
-                align="center"
-                bgcolor="#ec4899"
-                style="background-color:#ec4899;border-radius:10px;mso-padding-alt:16px 40px;"
-              >
-                <a
-                  href="${buttonUrl}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style="display:inline-block;padding:16px 40px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:0.3px;border-radius:10px;line-height:1;"
-                >
-                  ${buttonText}
-                </a>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>`
-      : "";
+          <tr>
+            <td align="center" class="px" style="padding:4px 44px 10px 44px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+                <tr>
+                  <td
+                    align="center"
+                    bgcolor="${C.accent}"
+                    style="background-color:${C.accent};border-radius:12px;mso-padding-alt:14px 30px;"
+                  >
+                    <a
+                      href="${escapeHtml(buttonUrl)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style="display:inline-block;padding:14px 30px;font-family:${FONT};font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:12px;line-height:1.2;letter-spacing:0.2px;"
+                    >
+                      ${buttonText}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td align="center" class="px" style="padding:0 44px 28px 44px;font-family:${FONT};font-size:12px;line-height:1.6;color:${C.muted};">
+              Or open this link directly:<br/>
+              <a href="${escapeHtml(buttonUrl)}" target="_blank" rel="noopener noreferrer" style="color:${C.muted};text-decoration:underline;word-break:break-all;">${escapeHtml(buttonUrl)}</a>
+            </td>
+          </tr>`
+      : `
+          <tr><td style="font-size:0;line-height:0;height:12px;">&nbsp;</td></tr>`;
 
   const closingBlock = closing
     ? `
-      <tr>
-        <td style="padding:0 40px 32px 40px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td
-                style="border-top:1px solid #e2e8f0;padding-top:20px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:14px;line-height:1.7;color:#64748b;font-style:italic;"
-              >
-                ${closing}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>`
+          <tr>
+            <td class="px" style="padding:2px 44px 34px 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-top:1px solid ${C.skyBorder};padding-top:20px;font-family:${SERIF};font-size:16px;line-height:1.75;color:${C.ink};font-style:italic;">
+                    ${closing}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`
     : "";
 
   return `<!doctype html>
@@ -196,6 +232,15 @@ export function renderEmailTemplate(input: EmailInput): string {
   <meta name="color-scheme" content="light only" />
   <meta name="supported-color-schemes" content="light" />
   <title>${subject}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    @media only screen and (max-width:620px) {
+      .px { padding-left:24px !important; padding-right:24px !important; }
+      .shell { padding:20px 10px !important; }
+      .letter-box { padding:22px !important; }
+      .h1 { font-size:24px !important; }
+    }
+  </style>
   <!--[if mso]>
   <noscript>
     <xml>
@@ -207,133 +252,125 @@ export function renderEmailTemplate(input: EmailInput): string {
   <![endif]-->
 </head>
 <body
-  style="margin:0;padding:0;width:100%;background-color:#f8fafc;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f172a;"
+  style="margin:0;padding:0;width:100%;background-color:${C.skySoft};-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:${FONT};color:${C.ink};"
 >
   <!-- Preheader -->
-  <div style="display:none;font-size:1px;color:#f8fafc;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
+  <div style="display:none;font-size:1px;color:${C.skySoft};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">
     ${preheader}
     ${"&nbsp;&zwnj;".repeat(40)}
   </div>
 
-  <!-- Outer background -->
-  <table
-    role="presentation"
-    width="100%"
-    cellpadding="0"
-    cellspacing="0"
-    border="0"
-    style="background-color:#f8fafc;"
-  >
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.skySoft};">
     <tr>
-      <td align="center" style="padding:40px 16px;">
+      <td align="center" class="shell" style="padding:38px 16px;">
 
-        <!-- ═══════════════ CARD ═══════════════ -->
+        <!-- Subtle top stationery line + tiny doodle -->
+        <table role="presentation" width="580" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:580px;margin-bottom:10px;">
+          <tr>
+            <td align="left" style="font-family:${SERIF};font-size:12px;color:${C.muted};letter-spacing:0.6px;">
+              <span style="color:${C.accent};">&#10022;</span> a quiet note
+            </td>
+            <td align="right" style="font-family:${SERIF};font-size:12px;color:${C.muted};letter-spacing:1.5px;">
+              &#183; &#10022; &#183;
+            </td>
+          </tr>
+        </table>
+
+        <!-- ═══════════════ STATIONERY CARD ═══════════════ -->
         <table
           role="presentation"
-          width="600"
+          width="580"
           cellpadding="0"
           cellspacing="0"
           border="0"
-          style="width:100%;max-width:600px;background-color:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;"
+          style="width:100%;max-width:580px;background-color:${C.card};border:1px solid ${C.skyBorder};border-radius:20px;overflow:hidden;"
         >
 
-          <!-- ─── Top bar (flat pink) ─── -->
+          <!-- Delicate split accent bar -->
           <tr>
-            <td
-              bgcolor="#ec4899"
-              style="background-color:#ec4899;padding:20px 40px;"
-            >
-              <p
-                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:12px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#ffffff;text-align:center;"
-              >
-                A Little Message
-              </p>
+            <td style="font-size:0;line-height:0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="55%" height="5" bgcolor="${C.blush}" style="background-color:${C.blush};height:5px;font-size:0;line-height:0;">&nbsp;</td>
+                  <td width="45%" height="5" bgcolor="${C.sky}" style="background-color:${C.sky};height:5px;font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
             </td>
           </tr>
 
-          <!-- ─── Heading (soft blue, centered) ─── -->
+          <!-- Header with monogram seal + editorial title -->
           <tr>
-            <td style="padding:36px 40px 12px 40px;" align="center">
+            <td align="center" class="px" style="padding:32px 44px 12px 44px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 14px auto;">
+                <tr>
+                  <td
+                    align="center"
+                    valign="middle"
+                    style="padding:7px 16px;background-color:${C.blushSoft};border:1px solid ${C.blushBorder};border-radius:999px;font-family:${SERIF};font-size:13px;font-style:italic;color:${C.accent};letter-spacing:0.4px;"
+                  >
+                    ${safeMonogram}
+                  </td>
+                </tr>
+              </table>
+
               <h1
-                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:22px;line-height:1.4;font-weight:700;color:#3b82f6;letter-spacing:-0.2px;"
+                class="h1"
+                style="margin:0;font-family:${SERIF};font-size:28px;line-height:1.28;font-weight:400;color:${C.ink};letter-spacing:-0.2px;"
               >
                 ${safeHeading}
               </h1>
+
+              <!-- Minimalist hand-drawn style divider -->
+              <div style="margin:16px auto 0 auto;font-family:${SERIF};font-size:13px;color:${C.muted};letter-spacing:4px;">
+                &#8212; &#10022; &#8212;
+              </div>
             </td>
           </tr>
 
-          <!-- ─── Greeting ─── -->
+          <!-- Optional photo -->
+          ${photoBlock}
+
+          <!-- Personal note sheet -->
           <tr>
-            <td style="padding:0 40px 16px 40px;">
-              <p
-                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.7;color:#475569;"
-              >
-                Hi ${safeRecipient},
-              </p>
+            <td class="px" style="padding:4px 44px 26px 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td
+                    class="letter-box"
+                    bgcolor="${C.blushSoft}"
+                    style="background-color:${C.blushSoft};border:1px solid ${C.blushBorder};border-radius:16px;padding:26px 30px;"
+                  >
+                    <p style="margin:0 0 14px 0;font-family:${SERIF};font-size:18px;line-height:1.45;font-style:italic;color:${C.ink};">
+                      Hey ${safeRecipient},
+                    </p>
+                    <p style="margin:0;font-family:${FONT};font-size:15.5px;line-height:1.8;font-weight:400;color:${C.body};">
+                      ${messageHtml}
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
-          <!-- ─── Optional hero image ─── -->
-          ${heroImage}
+          <!-- Optional button -->
+          ${buttonBlock}
 
-          <!-- ─── Message body ─── -->
-          <tr>
-            <td style="padding:0 40px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:15px;line-height:1.75;color:#334155;">
-              <p style="margin:0 0 20px 0;">${messageHtml}</p>
-            </td>
-          </tr>
-
-          <!-- ─── Default sticker (only when no custom image) ─── -->
-          ${sticker}
-
-          <!-- ─── Centered 2D CTA ─── -->
-          ${button}
-
-          <!-- ─── Optional closing ─── -->
+          <!-- Sign-off -->
           ${closingBlock}
 
-          <!-- ─── Footer ─── -->
-          <tr>
-            <td
-              bgcolor="#f8fafc"
-              style="background-color:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;"
-            >
-              <p
-                style="margin:0 0 6px 0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:13px;line-height:1.6;color:#64748b;text-align:center;"
-              >
-                Sent with love
-                <span style="color:#ec4899;">♥</span>
-                <span style="color:#3b82f6;">♥</span>
-              </p>
-              <p
-                style="margin:0;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:11px;line-height:1.6;color:#94a3b8;text-align:center;"
-              >
-                This message was made just for you.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-        <!-- ═══════════════ /CARD ═══════════════ -->
-
-        <!-- ─── Bottom copyright ─── -->
-        <table
-          role="presentation"
-          width="600"
-          cellpadding="0"
-          cellspacing="0"
-          border="0"
-          style="width:100%;max-width:600px;"
-        >
+          <!-- Quiet footer -->
           <tr>
             <td
               align="center"
-              style="padding:24px 16px 0 16px;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;font-size:11px;line-height:1.6;color:#94a3b8;"
+              bgcolor="${C.skySoft}"
+              style="background-color:${C.skySoft};border-top:1px solid ${C.skyBorder};padding:18px 44px;font-family:${FONT};font-size:12px;line-height:1.6;color:${C.muted};"
             >
-              © ${new Date().getFullYear()} · Made with care
+              Sent with care <span style="color:${C.accent};">&#10022;</span> just for you
             </td>
           </tr>
+
         </table>
+        <!-- ═══════════════ /STATIONERY CARD ═══════════════ -->
 
       </td>
     </tr>
@@ -346,23 +383,29 @@ export function renderEmailTemplate(input: EmailInput): string {
 // Plain-text fallback
 // ─────────────────────────────────────────────
 
-function renderPlainText(input: EmailInput): string {
+function renderPlainText(input: PersonalEmailInput): string {
   const lines: string[] = [
     input.heading,
-    "",
-    `Hi ${input.recipientName},`,
+    "---",
+    `Hey ${input.recipientName},`,
     "",
     input.message,
   ];
+
   if (input.buttonText && input.buttonUrl) {
     lines.push("", `${input.buttonText}: ${input.buttonUrl}`);
   }
   if (input.imageUrl) {
-    lines.push("", `Image: ${input.imageUrl}`);
+    lines.push(
+      "",
+      input.photoCaption
+        ? `${input.photoCaption}: ${input.imageUrl}`
+        : `Photo: ${input.imageUrl}`,
+    );
   }
   if (input.closing) {
     lines.push("", input.closing);
   }
-  lines.push("", "—", "Sent with love.");
+  lines.push("", "—", "Sent with care · just for you");
   return lines.join("\n");
 }

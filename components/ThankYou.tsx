@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -8,6 +8,7 @@ import {
   FastForward,
   RotateCcw,
   ShieldCheck,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -37,13 +38,200 @@ const C = {
   blueDeep: "#6fb0ff",
   bluePale: "#e2f0ff",
   butter: "#fff0b8",
+  butterDeep: "#ffe07d",
   mint: "#c9f2e1",
+  mintDeep: "#9ee6c9",
   white: "#ffffff",
 };
 const SPRINKLES = [C.pink, C.pinkDeep, C.blue, C.blueDeep, C.butter, C.mint, "#ffffff", "#d9c8ff"];
 
 const display = { fontFamily: "'Fredoka', 'Nunito', system-ui, sans-serif" };
 const body = { fontFamily: "'Nunito', system-ui, sans-serif" };
+
+type FillTone = "pink" | "blue" | "butter" | "mint";
+
+const FILL_THEMES: Record<
+  FillTone,
+  {
+    baseBg: string;
+    fillBg: string;
+    text: string;
+    hoverText: string;
+    ring: string;
+    accentDot: string;
+  }
+> = {
+  pink: {
+    baseBg: "#ffe4ee",
+    fillBg: "#ff9ec1",
+    text: "#4a2350",
+    hoverText: "#3a1640",
+    ring: "#ffd3e3",
+    accentDot: "#ff6fa5",
+  },
+  blue: {
+    baseBg: "#e2f0ff",
+    fillBg: "#b8d9ff",
+    text: "#2f3f7a",
+    hoverText: "#1f2d61",
+    ring: "#a8d1ff",
+    accentDot: "#6fb0ff",
+  },
+  butter: {
+    baseBg: "#fff0b8",
+    fillBg: "#ffe07d",
+    text: "#5c4614",
+    hoverText: "#473409",
+    ring: "#ffe07d",
+    accentDot: "#f5c438",
+  },
+  mint: {
+    baseBg: "#c9f2e1",
+    fillBg: "#96e3c3",
+    text: "#1e5240",
+    hoverText: "#133d2e",
+    ring: "#9ee6c9",
+    accentDot: "#4cc997",
+  },
+};
+
+/* ---------- Cute bouncy button wrapper with smooth fill-up sweep ---------- */
+interface JellyButtonProps {
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+  style?: React.CSSProperties;
+  ariaLabel?: string;
+  tilt?: number;
+  reduce?: boolean;
+  tone?: FillTone;
+}
+
+function JellyButton({
+  children,
+  onClick,
+  className = "",
+  style,
+  ariaLabel,
+  tilt = 2,
+  reduce = false,
+  tone = "pink",
+}: JellyButtonProps) {
+  const [hovered, setHovered] = useState(false);
+  const theme = FILL_THEMES[tone];
+
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      style={{
+        ...style,
+        backgroundColor: theme.baseBg,
+        color: hovered ? theme.hoverText : theme.text,
+      }}
+      className={`group relative overflow-hidden select-none transition-colors duration-300 focus-visible:outline-none focus-visible:ring-4 ${className}`}
+      whileHover={
+        reduce
+          ? undefined
+          : {
+              y: -3,
+              rotate: tilt,
+              scale: 1.04,
+            }
+      }
+      whileTap={
+        reduce
+          ? undefined
+          : {
+              y: 1,
+              rotate: -tilt * 1.2,
+              scale: 0.92,
+            }
+      }
+      transition={{
+        type: "spring",
+        stiffness: 460,
+        damping: 18,
+      }}
+    >
+      {/* Smooth liquid fill-up layer rising & sweeping across */}
+      <motion.span
+        aria-hidden
+        initial={false}
+        animate={
+          reduce
+            ? { opacity: hovered ? 1 : 0, y: "0%" }
+            : hovered
+            ? {
+                opacity: 1,
+                y: "0%",
+                borderTopLeftRadius: "24%",
+                borderTopRightRadius: "24%",
+              }
+            : {
+                opacity: 0.7,
+                y: "102%",
+                borderTopLeftRadius: "75%",
+                borderTopRightRadius: "75%",
+              }
+        }
+        transition={{
+          duration: 0.36,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        style={{ backgroundColor: theme.fillBg }}
+        className="pointer-events-none absolute inset-0 z-0"
+      />
+
+      {/* Soft glossy top highlight */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-2 top-[2px] z-[1] h-[38%] rounded-full bg-white/40"
+      />
+
+      {/* Cute floating micro-dots/sparkles when hovered */}
+      {!reduce && (
+        <>
+          <motion.span
+            aria-hidden
+            animate={
+              hovered
+                ? { opacity: [0, 1, 0], y: [2, -10, -14], x: [-2, -6], scale: [0.5, 1.1, 0.6] }
+                : { opacity: 0, y: 0, scale: 0.5 }
+            }
+            transition={{ duration: 0.75, repeat: hovered ? Infinity : 0, repeatDelay: 0.2 }}
+            style={{ backgroundColor: theme.accentDot }}
+            className="pointer-events-none absolute bottom-1.5 left-3 z-[2] h-1.5 w-1.5 rounded-full"
+          />
+          <motion.span
+            aria-hidden
+            animate={
+              hovered
+                ? { opacity: [0, 1, 0], y: [2, -11, -15], x: [2, 6], scale: [0.5, 1.15, 0.6] }
+                : { opacity: 0, y: 0, scale: 0.5 }
+            }
+            transition={{
+              duration: 0.8,
+              delay: 0.15,
+              repeat: hovered ? Infinity : 0,
+              repeatDelay: 0.25,
+            }}
+            style={{ backgroundColor: "#ffffff" }}
+            className="pointer-events-none absolute bottom-1.5 right-3 z-[2] h-1.5 w-1.5 rounded-full"
+          />
+        </>
+      )}
+
+      {/* Button content above fill layer */}
+      <span className="relative z-10 inline-flex items-center justify-center gap-2">
+        {children}
+      </span>
+    </motion.button>
+  );
+}
 
 /* ---------- Little shapes ---------- */
 function Heart({ size = 20, color = C.pinkDeep }: { size?: number; color?: string }) {
@@ -320,10 +508,10 @@ export default function ThankYou({
     onRestart();
   };
 
-  const pillBlue =
-    "inline-flex h-10 items-center gap-2 rounded-full bg-[#e2f0ff] px-4 text-[14px] font-bold text-[#2f3f7a] transition-colors hover:bg-[#cfe5ff] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#a8d1ff]";
-  const pillPink =
-    "inline-flex items-center justify-center gap-2 rounded-full bg-[#ffb8d1] font-bold text-[#4a2350] transition-colors hover:bg-[#ffa6c6] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#ffd3e3]";
+  const pillBase =
+    "inline-flex h-10 items-center gap-2 rounded-full px-4 text-[14px] font-extrabold focus-visible:ring-[#a8d1ff]";
+  const primaryPillBase =
+    "inline-flex items-center justify-center gap-2 rounded-full font-extrabold focus-visible:ring-[#ffd3e3]";
 
   return (
     <div
@@ -339,23 +527,25 @@ export default function ThankYou({
       {/* Header */}
       <header className="relative z-20 px-4 pt-[max(1rem,env(safe-area-inset-top))] sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
-          <button type="button" onClick={onPrevious} className={pillBlue}>
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            <span>Back</span>
-          </button>
-
-          <h1 className="flex items-center gap-2 text-[22px] font-semibold sm:text-[26px]" style={display}>
+         
+          <h1
+            className="flex items-center gap-2 text-[22px] font-semibold sm:text-[26px]"
+            style={display}
+          >
             <Heart size={20} />
             For being you
             <Heart size={20} color={C.blueDeep} />
           </h1>
 
           {total > 0 && !done ? (
-            <button type="button" onClick={finish} className={pillBlue}>
-              <FastForward className="h-4 w-4" aria-hidden />
+            <JellyButton onClick={finish} tone="butter" className={pillBase} tilt={3} reduce={rm}>
+              <FastForward
+                className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110"
+                aria-hidden
+              />
               <span className="hidden sm:inline">Skip to end</span>
               <span className="sm:hidden">Skip</span>
-            </button>
+            </JellyButton>
           ) : (
             <span className="w-[72px]" aria-hidden />
           )}
@@ -375,7 +565,7 @@ export default function ThankYou({
               const read = done || idx < i || (idx === i && !typing);
               const current = idx === i && !done;
               return (
-                <button
+                <motion.button
                   key={it._id}
                   type="button"
                   aria-label={`Jump to note ${idx + 1}`}
@@ -383,6 +573,9 @@ export default function ThankYou({
                     setDone(false);
                     setI(idx);
                   }}
+                  whileHover={rm ? undefined : { scale: 1.2, rotate: idx % 2 === 0 ? 8 : -8 }}
+                  whileTap={rm ? undefined : { scale: 0.85 }}
+                  transition={{ type: "spring", stiffness: 450, damping: 16 }}
                   className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#a8d1ff]"
                 >
                   <motion.span
@@ -392,7 +585,7 @@ export default function ThankYou({
                   >
                     <Heart size={20} color={read ? C.pinkDeep : current ? C.pink : "#dfe6f5"} />
                   </motion.span>
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -417,13 +610,19 @@ export default function ThankYou({
               {error || "No notes here yet. Check back soon."}
             </p>
             {error && (
-              <button
-                type="button"
+              <JellyButton
                 onClick={() => setRetry((r) => r + 1)}
-                className={`${pillPink} mt-5 h-11 px-6 text-[15px]`}
+                tone="pink"
+                className={`${primaryPillBase} mt-5 h-11 px-6 text-[15px]`}
+                tilt={2}
+                reduce={rm}
               >
-                Try again
-              </button>
+                <RotateCcw
+                  className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-90"
+                  aria-hidden
+                />
+                <span>Try again</span>
+              </JellyButton>
             )}
           </div>
         ) : (
@@ -500,17 +699,27 @@ export default function ThankYou({
               </div>
 
               <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
+                <JellyButton
                   onClick={advance}
-                  className={`${pillPink} group h-12 pl-6 pr-4 text-[16px]`}
+                  tone="pink"
+                  className={`${primaryPillBase} h-12 pl-6 pr-4 text-[16px]`}
+                  style={{ border: "3px solid #ffffff" }}
+                  tilt={2.5}
+                  reduce={rm}
                 >
                   <span>{i + 1 < total ? "Next note" : "Finish"}</span>
-                  <ChevronRight
-                    className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
-                    aria-hidden
-                  />
-                </button>
+                  {i + 1 < total ? (
+                    <ChevronRight
+                      className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1.5 group-hover:scale-110"
+                      aria-hidden
+                    />
+                  ) : (
+                    <Sparkles
+                      className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45 group-hover:scale-125"
+                      aria-hidden
+                    />
+                  )}
+                </JellyButton>
               </div>
             </motion.article>
           </AnimatePresence>
@@ -541,14 +750,19 @@ export default function ThankYou({
                 className="relative w-full max-w-md rounded-[2.5rem] bg-white px-6 pb-8 pt-14 text-center sm:px-9"
                 style={{ border: `5px solid ${C.pink}` }}
               >
-                <button
-                  type="button"
+                <JellyButton
                   onClick={() => setDone(false)}
-                  aria-label="Close dialog"
-                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-[#e2f0ff] text-[#2f3f7a] transition-colors hover:bg-[#cfe5ff] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#a8d1ff]"
+                  ariaLabel="Close dialog"
+                  tone="mint"
+                  tilt={8}
+                  reduce={rm}
+                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full focus-visible:ring-[#9ee6c9]"
                 >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
+                  <X
+                    className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90 group-hover:scale-110"
+                    aria-hidden
+                  />
+                </JellyButton>
 
                 <motion.div
                   aria-hidden
@@ -568,24 +782,41 @@ export default function ThankYou({
                   With all my heart, always.
                 </h2>
 
-                <p className="mx-auto mt-3 max-w-xs text-[18px] font-semibold leading-snug" style={{ color: C.inkSoft }}>
-                  Happy birthday, Meri Jan. Thank you for every moment.
-                  and extremely sorry for this much delay....
+                <p
+                  className="mx-auto mt-3 max-w-xs text-[18px] font-semibold leading-snug"
+                  style={{ color: C.inkSoft }}
+                >
+                  Happy birthday, Meri Jan. Thank you for every moment. and extremely sorry for this
+                  much delay....
                 </p>
 
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <button type="button" onClick={goAdmin} className={`${pillPink} h-12 flex-1 px-5 text-[15px]`}>
-                    <ShieldCheck className="h-4 w-4" aria-hidden />
-                    <span>Open admin panel</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={replay}
-                    className={`${pillBlue} h-12 flex-1 justify-center px-5 text-[15px]`}
+                  <JellyButton
+                    onClick={goAdmin}
+                    tone="pink"
+                    className={`${primaryPillBase} h-12 flex-1 px-5 text-[15px]`}
+                    tilt={-2}
+                    reduce={rm}
                   >
-                    <RotateCcw className="h-4 w-4" aria-hidden />
+                    <ShieldCheck
+                      className="h-4 w-4 transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6"
+                      aria-hidden
+                    />
+                    <span>Open admin panel</span>
+                  </JellyButton>
+                  <JellyButton
+                    onClick={replay}
+                    tone="blue"
+                    className={`${pillBase} h-12 flex-1 justify-center px-5 text-[15px]`}
+                    tilt={2}
+                    reduce={rm}
+                  >
+                    <RotateCcw
+                      className="h-4 w-4 transition-transform duration-300 group-hover:-rotate-180"
+                      aria-hidden
+                    />
                     <span>Read again</span>
-                  </button>
+                  </JellyButton>
                 </div>
               </motion.div>
             </motion.div>

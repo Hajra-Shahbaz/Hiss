@@ -47,20 +47,145 @@ const GATED_STAGES: Stage[] = [
   "thankyou",
 ];
 
-// Stages where the shared top nav should be hidden
 const HIDE_NAV_STAGES: Stage[] = ["welcome", "secret"];
 
+// ── 2D JELLYFISH NAV BUTTON ──
+function JellyfishButton({
+  direction,
+  onClick,
+  ariaLabel,
+}: {
+  direction: "back" | "next";
+  onClick: () => void;
+  ariaLabel: string;
+}) {
+  const isNext = direction === "next";
+
+  // Palette: Yellow-Orange mix for Next, Blue for Back
+  const strokeColor = isNext ? "#fbbf24" : "#93c5fd";
+  const glowColor = isNext
+    ? "rgba(249, 115, 22, 0.36)"
+    : "rgba(59, 130, 246, 0.36)";
+  const bgGradient = isNext
+    ? "radial-gradient(circle at 50% 25%, rgba(250, 204, 21, 0.48), rgba(249, 115, 22, 0.2) 72%, rgba(234, 88, 12, 0.32))"
+    : "radial-gradient(circle at 50% 25%, rgba(96, 165, 250, 0.45), rgba(37, 99, 235, 0.16) 70%, rgba(96, 165, 250, 0.28))";
+
+  return (
+    <motion.button
+      onClick={onClick}
+      aria-label={ariaLabel}
+      // Subtle ambient bobbing like floating in water
+      animate={{
+        y: [0, -2, 0],
+      }}
+      transition={{
+        duration: isNext ? 3.2 : 3.6,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+      // Squishy jellyfish pulse on hover & tap
+      whileHover={{
+        scaleX: 1.12,
+        scaleY: 0.9,
+        transition: { type: "spring", stiffness: 350, damping: 14 },
+      }}
+      whileTap={{
+        scaleX: 0.85,
+        scaleY: 1.18,
+        transition: { type: "spring", stiffness: 450, damping: 12 },
+      }}
+      className="group pointer-events-auto relative flex flex-col items-center focus:outline-none"
+    >
+      {/* Jellyfish Bell (Dome) */}
+      <div
+        style={{
+          borderRadius: "52% 52% 36% 36% / 68% 68% 32% 32%",
+          background: bgGradient,
+          borderColor: strokeColor,
+          boxShadow: `0 3px 10px ${glowColor}, inset 0 2px 4px rgba(255, 255, 255, 0.35)`,
+        }}
+        className="relative flex h-7 w-8 items-center justify-center border-[1.25px] backdrop-blur-[2px] transition-shadow duration-300 group-hover:brightness-110"
+      >
+        {/* Top inner glossy highlight */}
+        <span className="pointer-events-none absolute top-1 h-1 w-3.5 rounded-full bg-white/30" />
+
+        {/* Direction Arrow */}
+        {isNext ? (
+          <ArrowRight
+            style={{ color: "#fffbeb" }}
+            className="relative z-10 h-3 w-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-transform duration-200 group-hover:translate-x-0.5"
+          />
+        ) : (
+          <ArrowLeft
+            style={{ color: "#dbeafe" }}
+            className="relative z-10 h-3 w-3 drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-transform duration-200 group-hover:-translate-x-0.5"
+          />
+        )}
+      </div>
+
+      {/* 2D Wavy Tentacles */}
+      <svg
+        width="22"
+        height="10"
+        viewBox="0 0 30 14"
+        fill="none"
+        className="-mt-[1px] overflow-visible opacity-90 transition-opacity group-hover:opacity-100"
+      >
+        <motion.path
+          d="M 8 0 Q 5 5, 8 9 T 7 14"
+          stroke={strokeColor}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          animate={{
+            d: [
+              "M 8 0 Q 5 5, 8 9 T 7 14",
+              "M 8 0 Q 11 5, 8 9 T 9 14",
+              "M 8 0 Q 5 5, 8 9 T 7 14",
+            ],
+          }}
+          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.path
+          d="M 15 0 Q 18 5, 15 10 T 16 15"
+          stroke={strokeColor}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          animate={{
+            d: [
+              "M 15 0 Q 18 5, 15 10 T 16 15",
+              "M 15 0 Q 12 5, 15 10 T 14 15",
+              "M 15 0 Q 18 5, 15 10 T 16 15",
+            ],
+          }}
+          transition={{ duration: 2.1, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.path
+          d="M 22 0 Q 19 5, 22 9 T 21 14"
+          stroke={strokeColor}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          animate={{
+            d: [
+              "M 22 0 Q 19 5, 22 9 T 21 14",
+              "M 22 0 Q 25 5, 22 9 T 23 14",
+              "M 22 0 Q 19 5, 22 9 T 21 14",
+            ],
+          }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </svg>
+    </motion.button>
+  );
+}
+
 export default function BirthdayExperience() {
-  // 1. Initialize with a safe default that matches the server
   const [stage, setStage] = useState<Stage>("welcome");
   const [isClient, setIsClient] = useState(false);
 
-  // Session-only state (now initialized from sessionStorage)
   const [gateToken, setGateToken] = useState<string | null>(null);
   const [noAttempted, setNoAttempted] = useState(false);
   const [verifiedOnce, setVerifiedOnce] = useState(false);
 
-  // Public content cache
   const [publicContent, setPublicContent] = useState<{
     wishes: unknown[] | null;
     congratulations: unknown[] | null;
@@ -69,7 +194,6 @@ export default function BirthdayExperience() {
 
   const [contentLoading, setContentLoading] = useState(false);
 
-  // 2. Hydrate the saved stage AND gateToken AFTER mounting to prevent SSR mismatch
   useEffect(() => {
     setIsClient(true);
     const savedStage = sessionStorage.getItem("current_stage") as Stage;
@@ -84,7 +208,6 @@ export default function BirthdayExperience() {
     }
   }, []);
 
-  // ── Save stage and gateToken to sessionStorage whenever they change ──
   useEffect(() => {
     if (isClient) {
       sessionStorage.setItem("current_stage", stage);
@@ -101,7 +224,6 @@ export default function BirthdayExperience() {
     }
   }, [gateToken, isClient]);
 
-  // ── Fetch public content exactly ONCE, as soon as we leave "welcome" ──
   const fetchedRef = useRef(false);
 
   useEffect(() => {
@@ -167,7 +289,7 @@ export default function BirthdayExperience() {
     setVerifiedOnce(false);
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("current_stage");
-      sessionStorage.removeItem("typed_wishes_ids"); 
+      sessionStorage.removeItem("typed_wishes_ids");
       sessionStorage.removeItem("gate_token");
     }
   }, []);
@@ -184,19 +306,19 @@ export default function BirthdayExperience() {
 
   const showNav = !HIDE_NAV_STAGES.includes(stage);
   const canGoBack = POST_WISHES_ORDER.indexOf(stage) > 0;
-  const canGoNext = POST_WISHES_ORDER.indexOf(stage) < POST_WISHES_ORDER.length - 1;
+  const canGoNext =
+    POST_WISHES_ORDER.indexOf(stage) < POST_WISHES_ORDER.length - 1;
 
-  // Disables scrolling on the main wrapper ONLY for the wishes stage
   const isWishesStage = stage === "wishes";
 
   return (
     <MotionConfig reducedMotion="user">
-      <main 
+      <main
         className={`relative flex w-full flex-col overflow-x-hidden ${
           isWishesStage ? "h-[100dvh] overflow-hidden" : "min-h-[100dvh]"
         }`}
       >
-        {/* ── GLOBAL TOP NAV ── */}
+        {/* ── GLOBAL TOP NAV (Floating, zero layout space taken) ── */}
         <AnimatePresence>
           {showNav && (
             <motion.nav
@@ -205,46 +327,32 @@ export default function BirthdayExperience() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-center justify-between gap-3 px-4 pt-4 md:px-6 md:pt-6"
+              className="pointer-events-none fixed inset-x-0 top-0 z-40 flex items-start justify-between px-4 pt-3 md:px-6 md:pt-4"
             >
-              {/* soft scrim so buttons stay legible over any stage */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
-
-              {/* BACK — small circular arrow */}
               {canGoBack ? (
-                <motion.button
+                <JellyfishButton
+                  direction="back"
                   onClick={previous}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                  className="group pointer-events-auto relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-[#f5d68a]/30 bg-white/[0.05] text-[#e0d7ff] backdrop-blur-md transition-colors hover:border-[#f5d68a]/70 hover:text-[#f5d68a]"
-                  aria-label="Go back"
-                >
-                  <ArrowLeft className="relative h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-                </motion.button>
+                  ariaLabel="Go back"
+                />
               ) : (
-                <div aria-hidden className="h-9 w-9" />
+                <div aria-hidden className="w-11" />
               )}
 
-              {/* NEXT — small gold circular arrow */}
               {canGoNext ? (
-                <motion.button
+                <JellyfishButton
+                  direction="next"
                   onClick={next}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  transition={{ type: "spring", stiffness: 420, damping: 22 }}
-                  className="group pointer-events-auto relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-[#0b0a1f]"
-                  aria-label="Go next"
-                >
-                  <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </motion.button>
+                  ariaLabel="Go next"
+                />
               ) : (
-                <div aria-hidden className="h-9 w-9" />
+                <div aria-hidden className="w-11" />
               )}
             </motion.nav>
           )}
         </AnimatePresence>
 
+        {/* ── STAGE CONTENT (Removed pt-14 so there is zero extra top space) ── */}
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={stage}
@@ -252,7 +360,9 @@ export default function BirthdayExperience() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-            className={`flex flex-1 flex-col ${isWishesStage ? "h-full overflow-hidden" : "pt-14"}`}
+            className={`flex flex-1 flex-col ${
+              isWishesStage ? "h-full overflow-hidden" : ""
+            }`}
           >
             {stage === "welcome" && (
               <WelcomePage

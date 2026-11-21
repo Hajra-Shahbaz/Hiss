@@ -3,6 +3,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, Sparkles, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import { useRef } from "react";
 
 interface Props {
   noAttempted: boolean;
@@ -11,6 +13,200 @@ interface Props {
 }
 
 type Stage = "welcome" | "prank" | "sticker";
+
+/* ============================================================
+   ✨ NEW (additions only) — cute lines, mascot, clouds, tap hearts
+   ============================================================ */
+const CUTE_LINES = [
+  "you make ordinary days feel like magic ✨",
+  "psst… this was made with so much love 💙",
+  "warning: may cause uncontrollable smiling 🥹",
+  "I saved the softest corner of the internet for you ☁️",
+  "take a deep breath… something sweet is waiting 🫧",
+  "no pressure, just a little pocket of cuteness 🧸",
+];
+
+const PRANK_CUTE_LINES = [
+  "the “no” button is just shy 🙈",
+  "your smile is loading… 🫧",
+  "nice try, cutie 💫",
+  "I can hear you blushing 🌸",
+];
+
+function CuteLines({
+  lines,
+  interval = 3400,
+  className = "",
+}: {
+  lines: string[];
+  interval?: number;
+  className?: string;
+}) {
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % lines.length), interval);
+    return () => clearInterval(t);
+  }, [lines.length, interval]);
+
+  return (
+    <div
+      className={`relative flex min-h-[2.5rem] items-center justify-center ${className}`}
+      aria-live="polite"
+    >
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={i}
+          initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, y: -8, filter: "blur(3px)" }}
+          transition={{ duration: 0.45 }}
+          className="text-balance"
+        >
+          {lines[i]}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function CloudMascot() {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      aria-hidden
+      className="mb-2 h-24 w-28 sm:h-28 sm:w-32"
+      animate={reduce ? undefined : { y: [0, -8, 0] }}
+      transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <svg viewBox="0 0 140 120" className="h-full w-full overflow-visible">
+        <defs>
+          <linearGradient id="cloudBody" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#ffffff" />
+            <stop offset="100%" stopColor="#dbeafe" />
+          </linearGradient>
+          <linearGradient id="mascotHeart" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#93c5fd" />
+            <stop offset="100%" stopColor="#6366f1" />
+          </linearGradient>
+        </defs>
+
+        <motion.g
+          animate={reduce ? undefined : { y: [0, -5, 0], scale: [1, 1.12, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          style={{ transformOrigin: "70px 12px" }}
+        >
+          <path
+            d="M70 24s-13-8-13-18a7 7 0 0 1 13-3.6A7 7 0 0 1 83 6c0 10-13 18-13 18Z"
+            fill="url(#mascotHeart)"
+          />
+        </motion.g>
+
+        <path
+          d="M34 100c-15 0-26-9-26-22 0-11 8-19 19-21 2-16 16-27 33-27 13 0 24 6 29 17 3-2 7-3 11-3 14 0 24 10 24 23 0 18-13 33-31 33H34Z"
+          fill="url(#cloudBody)"
+          stroke="#bfdbfe"
+          strokeWidth="2.5"
+        />
+
+        {[52, 88].map((cx) => (
+          <motion.ellipse
+            key={cx}
+            cx={cx}
+            cy={72}
+            rx={5}
+            ry={6.5}
+            fill="#1e3a8a"
+            animate={reduce ? undefined : { scaleY: [1, 1, 0.1, 1, 1] }}
+            transition={{ duration: 4, repeat: Infinity, times: [0, 0.9, 0.94, 0.98, 1] }}
+            style={{ transformOrigin: `${cx}px 72px` }}
+          />
+        ))}
+        <circle cx="54" cy="69.5" r="1.7" fill="#fff" />
+        <circle cx="90" cy="69.5" r="1.7" fill="#fff" />
+
+        <ellipse cx="38" cy="82" rx="7" ry="4.5" fill="#f9a8d4" opacity="0.6" />
+        <ellipse cx="102" cy="82" rx="7" ry="4.5" fill="#f9a8d4" opacity="0.6" />
+
+        <path
+          d="M63 82q7 8 14 0"
+          fill="none"
+          stroke="#1e3a8a"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+      </svg>
+    </motion.div>
+  );
+}
+
+function SoftClouds() {
+  const clouds = [
+    { id: 0, top: "8%", scale: 1, duration: 70, delay: 0, opacity: 0.85 },
+    { id: 1, top: "30%", scale: 0.65, duration: 90, delay: -30, opacity: 0.6 },
+    { id: 2, top: "62%", scale: 0.85, duration: 80, delay: -55, opacity: 0.7 },
+    { id: 3, top: "80%", scale: 0.55, duration: 100, delay: -15, opacity: 0.55 },
+  ];
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      {clouds.map((c) => (
+        <motion.div
+          key={c.id}
+          className="absolute left-0"
+          style={{ top: c.top, opacity: c.opacity }}
+          initial={{ x: "-30vw" }}
+          animate={{ x: "115vw" }}
+          transition={{ duration: c.duration, delay: c.delay, repeat: Infinity, ease: "linear" }}
+        >
+          <svg width={150 * c.scale} height={70 * c.scale} viewBox="0 0 150 70" fill="#ffffff">
+            <path d="M32 66C14 66 4 55 4 43c0-11 8-19 19-20C26 10 38 2 52 2c13 0 24 7 29 18 3-2 7-3 11-3 11 0 20 8 21 18 14 1 25 10 25 22 0 7-6 11-12 11H32Z" />
+          </svg>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
+/* Tap anywhere → little emojis pop up (listens on window, so no
+   existing element needed to change) */
+type Pop = { id: number; x: number; y: number; emoji: string };
+const POP_EMOJIS = ["💙", "✨", "🫧", "💫", "☁️", "🩵"];
+
+function TapHearts() {
+  const [pops, setPops] = useState<Pop[]>([]);
+  const idRef = useRef(0);
+
+  useEffect(() => {
+    const onDown = (e: PointerEvent) => {
+      const id = idRef.current++;
+      const emoji = POP_EMOJIS[id % POP_EMOJIS.length];
+      setPops((p) => [...p.slice(-12), { id, x: e.clientX, y: e.clientY, emoji }]);
+      setTimeout(() => setPops((p) => p.filter((x) => x.id !== id)), 1000);
+    };
+    window.addEventListener("pointerdown", onDown);
+    return () => window.removeEventListener("pointerdown", onDown);
+  }, []);
+
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-50 overflow-hidden">
+      <AnimatePresence>
+        {pops.map((p) => (
+          <motion.span
+            key={p.id}
+            className="absolute text-xl"
+            style={{ left: p.x - 12, top: p.y - 12 }}
+            initial={{ opacity: 1, scale: 0.4, y: 0 }}
+            animate={{ opacity: 0, scale: 1.4, y: -70, x: (p.id % 5) * 8 - 16 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          >
+            {p.emoji}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
 
 /* ============================================================
    BACKGROUND LAYER 1 — Drifting SVG hearts & stars (blue only)
@@ -394,9 +590,11 @@ export default function WelcomePage({ noAttempted, onYes, onNo }: Props) {
         <>
           <MeshBackground />
           <DotGrid />
+          <SoftClouds />
           <TwinkleField />
           <LightSweep />
           <DriftingShapes />
+          <TapHearts />
         </>
       )}
 
@@ -411,6 +609,8 @@ export default function WelcomePage({ noAttempted, onYes, onNo }: Props) {
             transition={{ duration: 0.4 }}
             className="relative z-10 flex w-full max-w-2xl flex-col items-center -translate-y-4 sm:-translate-y-8"
           >
+            <CloudMascot />
+
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -460,6 +660,8 @@ export default function WelcomePage({ noAttempted, onYes, onNo }: Props) {
               <br /> Ready to step inside?
             </motion.p>
 
+          
+
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
@@ -500,6 +702,15 @@ export default function WelcomePage({ noAttempted, onYes, onNo }: Props) {
                 See? You came back. I knew it. 💙
               </motion.p>
             )}
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.8 }}
+              transition={{ delay: 1.2 }}
+              className="mt-6 text-xs text-slate-400"
+            >
+              (psst… tap anywhere for a little sparkle ✨)
+            </motion.p>
           </motion.div>
         )}
 
@@ -530,6 +741,14 @@ export default function WelcomePage({ noAttempted, onYes, onNo }: Props) {
               className="mt-6 text-base font-medium text-slate-700 sm:text-lg"
             >
               Okay… come with me 💫
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="mt-1 text-sm text-indigo-400"
+            >
+              hold my hand, it&apos;s going to be cute 🤍
             </motion.p>
           </motion.div>
         )}
@@ -632,7 +851,7 @@ function PrankScreen({ onReturn }: { onReturn: () => void }) {
           transition={{ delay: 0.35, duration: 0.5 }}
           className="mt-5 max-w-md text-balance text-xl font-semibold leading-snug text-slate-800 sm:mt-6 sm:text-2xl"
         >
-          Aw, &quot;no&quot;? That&apos;s cute.
+          Aw, &quot;no&quot;? TQ mar khani h ap n.
         </motion.h2>
 
         <motion.p
@@ -643,6 +862,8 @@ function PrankScreen({ onReturn }: { onReturn: () => void }) {
         >
           But your heart already said yes. Give it {secondsLeft}s…
         </motion.p>
+
+  
 
         <div className="mt-6 h-1.5 w-full max-w-[220px] overflow-hidden rounded-full bg-slate-200/80 sm:mt-7">
           <motion.div

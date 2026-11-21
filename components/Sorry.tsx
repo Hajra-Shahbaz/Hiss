@@ -337,14 +337,13 @@ function VoiceNoteModal({
                 className="mt-1 text-2xl leading-none"
                 style={{ fontFamily: FONT_HAND, color: ROSE }}
               >
-                recorded just for you
-              </p>
+sakoun se sunain              </p>
               <p
                 className="mx-auto mt-3.5 max-w-xs text-sm leading-relaxed"
                 style={{ color: INK_SOFT }}
               >
-                Take a breath, get comfy, maybe put your headphones on. I said
-                this from the heart, and I wanted you to hear it in my voice.
+                Take a breath, get comfy, maybe put your headphones on. I recorded
+                this with a great courage, and too much drama.
               </p>
 
               {/* player card */}
@@ -1126,8 +1125,7 @@ export default function Sorry({
               className="text-2xl sm:text-[26px]"
               style={{ fontFamily: FONT_HAND, color: ROSE }}
             >
-              you read every note — my voice note is unlocked
-            </p>
+bura mat manna kisi chz ka 👉🏻👈🏻            </p>
           ) : (
             <p
               className="text-xl sm:text-2xl"
@@ -1175,7 +1173,7 @@ export default function Sorry({
 
             <span className="relative">
               {voiceUnlocked
-                ? "Listen to my voice note"
+                ? "Ab sunain Ap meri bat"
                 : `Voice note locked (${readCount}/${totalNotes})`}
             </span>
 
@@ -1189,36 +1187,6 @@ export default function Sorry({
           </button>
         </motion.div>
 
-        {/* ---------------- page navigation ---------------- */}
-        <nav
-          aria-label="Page navigation"
-          className="mt-12 flex flex-wrap items-center justify-center gap-3"
-        >
-          <button
-            type="button"
-            onClick={onPrevious}
-            className="inline-flex items-center gap-2 rounded-full border border-white/90 bg-white/75 px-5 py-2.5 text-sm font-medium shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-            style={{ color: INK }}
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
-          <button
-            type="button"
-            onClick={onRestart}
-            className="inline-flex items-center gap-2 rounded-full border border-white/90 bg-white/75 px-5 py-2.5 text-sm font-medium shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-            style={{ color: INK_SOFT }}
-          >
-            <RotateCcw className="h-4 w-4" /> Start over
-          </button>
-          <button
-            type="button"
-            onClick={onNext}
-            className="inline-flex items-center gap-2 rounded-full border border-white/90 bg-white/85 px-6 py-2.5 text-sm font-semibold shadow-sm backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-white active:translate-y-0"
-            style={{ color: ROSE_DEEP }}
-          >
-            Continue <ArrowRight className="h-4 w-4" />
-          </button>
-        </nav>
       </div>
 
       <VoiceNoteModal

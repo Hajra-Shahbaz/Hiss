@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import AdminPanel from "@/components/admin/AdminPanel";
 
 export const metadata = {
-  title: "Admin · Birthday Experience",
+  title: "Love you so much",
   robots: { index: false, follow: false },
 };
 

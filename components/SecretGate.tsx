@@ -975,8 +975,7 @@ export default function SecretGate({
                       className="text-xl leading-snug"
                       style={{ fontFamily: "'Caveat', cursive" }}
                     >
-                      Think of the day our story started — try writing the numbers cleanly without extra spaces.
-                    </p>
+Yar phely date phr month phr year ka last part like ddmmyy - dashes na dalna                    </p>
                   </div>
                 </motion.div>
               )}

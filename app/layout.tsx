@@ -15,7 +15,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Happy Birthday | Abdullah💙",
+  title: "Happy Birthday | Abdullah 🤍",
   description: "Something made just for you.",
   robots: { index: false, follow: false },
 };
